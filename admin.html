@@ -108,6 +108,16 @@
   .panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:22px}
   .panel + .panel{margin-top:20px}
   .panel-title{font-size:15px;font-weight:700;color:var(--navy-deep);margin-bottom:16px}
+
+  /* PROGRES PESERTA MENGERJAKAN POST-TEST */
+  .progress-row{margin-bottom:18px}
+  .progress-row:last-child{margin-bottom:0}
+  .progress-row-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;font-size:13px;flex-wrap:wrap}
+  .progress-row-head .label{font-weight:700;color:var(--navy-deep)}
+  .progress-row-head .stat{color:var(--muted);font-weight:600;white-space:nowrap}
+  .progress-row-head .stat b{color:var(--blue);font-weight:800}
+  .progress-track{height:10px;background:var(--paper);border-radius:100px;overflow:hidden}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:100px;transition:width .3s ease;min-width:2px}
   .bar-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;font-size:13px}
   .bar-row:last-child{margin-bottom:0}
   .bar-row .bar-label{width:120px;flex-shrink:0;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -173,14 +183,25 @@
   .webinar-meta svg{width:14px;height:14px}
   .webinar-card-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto;padding-top:6px;border-top:1px solid var(--line)}
 
-  .toggle-switch{position:relative;display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
-  .toggle-switch input{position:absolute;opacity:0;width:0;height:0}
-  .toggle-track{width:38px;height:22px;background:#d8deec;border-radius:100px;position:relative;transition:background .2s ease;flex-shrink:0}
+  .toggle-switch{display:inline-flex;align-items:center;padding:0;background:none;border:none;cursor:pointer;flex-shrink:0}
+  .toggle-track{width:38px;height:22px;background:#d8deec;border-radius:100px;position:relative;transition:background .2s ease}
   .toggle-track::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .2s ease;box-shadow:0 1px 3px rgba(0,0,0,.25)}
-  .toggle-switch input:checked + .toggle-track{background:var(--green)}
-  .toggle-switch input:checked + .toggle-track::after{transform:translateX(16px)}
-  .toggle-label{font-size:12px;font-weight:700;color:var(--muted)}
-  .toggle-switch input:checked ~ .toggle-label{color:var(--green)}
+  .toggle-track.on{background:var(--green)}
+  .toggle-track.on::after{transform:translateX(16px)}
+
+  /* HALAMAN DETAIL WEBINAR (bukan modal, biar lebih luas) */
+  .btn-back{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--navy-deep);background:var(--paper);flex-shrink:0}
+  .btn-back:hover{background:var(--line)}
+  .btn-back svg{width:18px;height:18px}
+
+  .youtube-preview{position:relative;width:100%;max-width:480px;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#0b1730;margin-top:12px}
+  .youtube-preview iframe{width:100%;height:100%;border:0;display:block}
+
+  .fab-add-soal{display:none;position:fixed;bottom:28px;right:28px;width:54px;height:54px;border-radius:50%;background:var(--blue);color:#fff;align-items:center;justify-content:center;box-shadow:0 14px 30px -10px rgba(33,91,220,.6);z-index:150}
+  .fab-add-soal:hover{background:#1a4bc0}
+  .fab-add-soal svg{width:24px;height:24px}
+  .fab-add-soal.show{display:flex}
+  @media (max-width:900px){ .fab-add-soal{bottom:20px;right:20px;width:50px;height:50px} }
 
   /* MODAL */
   .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(7,16,38,.55);z-index:200;align-items:center;justify-content:center;padding:20px}
@@ -380,7 +401,7 @@
       </div>
     </section>
 
-    <!-- ===== KELOLA WEBINAR ===== -->
+    <!-- ===== KELOLA WEBINAR (LIST) ===== -->
     <section class="view" id="view-webinar">
       <div class="content-header">
         <div>
@@ -388,10 +409,58 @@
           <p>Atur link YouTube &amp; soal pretest tiap webinar, lalu aktifkan biar muncul di LMS peserta.</p>
         </div>
       </div>
+
+      <div class="panel" style="margin-bottom:20px">
+        <div class="panel-title">Progres Peserta Mengerjakan Post-test</div>
+        <div id="webinarProgressRows">
+          <p style="color:var(--muted);font-size:13px">Memuat...</p>
+        </div>
+      </div>
+
       <div class="webinar-grid" id="webinarGrid">
         <div class="webinar-card"><span class="skel-text" style="width:60%"></span></div>
         <div class="webinar-card"><span class="skel-text" style="width:60%"></span></div>
         <div class="webinar-card"><span class="skel-text" style="width:60%"></span></div>
+      </div>
+    </section>
+
+    <!-- ===== KELOLA WEBINAR (DETAIL — halaman penuh, bukan popup) ===== -->
+    <section class="view" id="view-webinar-detail">
+      <div class="content-header">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button type="button" class="btn-back" id="btnBackToWebinarList" title="Kembali"><i data-lucide="arrow-left"></i></button>
+          <div>
+            <h1 id="webinarDetailTitle">Kelola Webinar</h1>
+            <p>Atur link YouTube &amp; soal pretest untuk webinar ini.</p>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button type="button" class="btn btn-outline btn-sm" id="btnCancelWebinarDetail">Batal</button>
+          <button type="button" class="btn btn-primary btn-sm" id="btnSaveWebinarDetail"><i data-lucide="save"></i> Simpan</button>
+        </div>
+      </div>
+
+      <p class="form-msg" id="webinarDetailMsg" style="margin-bottom:16px"></p>
+
+      <div class="panel" style="margin-bottom:20px">
+        <div class="form-grid" style="max-width:none">
+          <div class="form-field full">
+            <label for="webinarJudulInput">Judul Webinar</label>
+            <input type="text" id="webinarJudulInput" placeholder="Misal: Webinar 1 - Pembukaan Program">
+          </div>
+          <div class="form-field full">
+            <label for="webinarYoutubeInput">Link YouTube</label>
+            <input type="text" id="webinarYoutubeInput" placeholder="https://youtube.com/watch?v=...">
+            <div class="youtube-preview" id="youtubePreviewBox" style="display:none"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Soal Pretest</div>
+        <div id="soalListContainer"></div>
+        <p id="emptySoalMsg" style="display:none;color:var(--muted);font-size:13px;text-align:center;padding:24px 0">Belum ada soal. Klik tombol &quot;Tambah Soal&quot; di pojok kanan bawah buat mulai.</p>
+        <button type="button" class="btn btn-outline btn-sm" id="btnTambahSoalBottom" style="margin-top:6px"><i data-lucide="plus"></i> Tambah Soal</button>
       </div>
     </section>
 
@@ -447,34 +516,27 @@
 
 </div>
 
-<!-- ===== MODAL KELOLA WEBINAR ===== -->
-<div class="modal-backdrop" id="webinarModalBackdrop">
-  <div class="modal-box modal-lg">
+<!-- ===== FAB TAMBAH SOAL (biar gak usah scroll ke atas) ===== -->
+<button type="button" class="fab-add-soal" id="btnTambahSoalFab" title="Tambah Soal"><i data-lucide="plus"></i></button>
+
+<!-- ===== MODAL KONFIRMASI PASSWORD (toggle aktif/nonaktif webinar) ===== -->
+<div class="modal-backdrop" id="confirmToggleModalBackdrop">
+  <div class="modal-box" style="max-width:380px">
     <div class="modal-header">
-      <h2 id="webinarModalTitle">Kelola Webinar</h2>
-      <button type="button" class="modal-close" id="btnCloseWebinarModal"><i data-lucide="x"></i></button>
+      <h2 id="confirmToggleTitle">Konfirmasi</h2>
+      <button type="button" class="modal-close" id="btnCloseConfirmToggle"><i data-lucide="x"></i></button>
     </div>
     <div class="modal-body">
-      <div class="form-field full" style="margin-bottom:14px">
-        <label for="webinarJudulInput">Judul Webinar</label>
-        <input type="text" id="webinarJudulInput" placeholder="Misal: Webinar 1 - Pembukaan Program">
+      <p id="confirmToggleText" style="font-size:13.5px;color:var(--muted);margin-bottom:16px;line-height:1.6"></p>
+      <div class="form-field full">
+        <label for="confirmTogglePassword">Masukkan password akun Anda</label>
+        <input type="password" id="confirmTogglePassword" placeholder="Password">
       </div>
-      <div class="form-field full" style="margin-bottom:22px">
-        <label for="webinarYoutubeInput">Link YouTube</label>
-        <input type="text" id="webinarYoutubeInput" placeholder="https://youtube.com/watch?v=...">
-      </div>
-
-      <div class="soal-section-header">
-        <div class="panel-title" style="margin-bottom:0">Soal Pretest</div>
-        <button type="button" class="btn btn-outline btn-sm" id="btnTambahSoal"><i data-lucide="plus"></i> Tambah Soal</button>
-      </div>
-      <div id="soalListContainer"></div>
-      <p id="emptySoalMsg" style="display:none;color:var(--muted);font-size:13px;text-align:center;padding:24px 0">Belum ada soal. Klik &quot;Tambah Soal&quot; buat mulai bikin soal pretest.</p>
+      <p class="form-msg" id="confirmToggleMsg"></p>
     </div>
     <div class="modal-footer">
-      <p class="form-msg" id="webinarModalMsg"></p>
-      <button type="button" class="btn btn-outline btn-sm" id="btnCancelWebinarModal">Batal</button>
-      <button type="button" class="btn btn-primary btn-sm" id="btnSaveWebinarModal"><i data-lucide="save"></i> Simpan</button>
+      <button type="button" class="btn btn-outline btn-sm" id="btnCancelConfirmToggle">Batal</button>
+      <button type="button" class="btn btn-primary btn-sm" id="btnConfirmToggle"><i data-lucide="check"></i> Konfirmasi</button>
     </div>
   </div>
 </div>
@@ -847,23 +909,64 @@
   let webinarList = [];
   let currentEditingWebinar = null;
   let currentSoalState = [];
+  let pendingToggle = null; // { webinarId, newVal }
 
   function labelFor(i) { return String.fromCharCode(65 + i); } // 0->A, 1->B, ...
   function escapeHtml(str) { return String(str || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
   function escapeAttr(str) { return String(str || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
   async function loadWebinars() {
-    const [webinarsRes, soalRes] = await Promise.all([
+    const [webinarsRes, soalRes, attemptsRes] = await Promise.all([
       supabaseClient.from('webinars').select('*').order('nomor'),
-      supabaseClient.from('webinar_soal').select('id, webinar_id')
+      supabaseClient.from('webinar_soal').select('id, webinar_id'),
+      supabaseClient.from('peserta_pretest').select('webinar_id, peserta_id')
     ]);
     if (webinarsRes.error) { showPageError('Gagal memuat data webinar: ' + webinarsRes.error.message); return; }
 
     const soalCounts = {};
     (soalRes.data || []).forEach(s => { soalCounts[s.webinar_id] = (soalCounts[s.webinar_id] || 0) + 1; });
 
-    webinarList = (webinarsRes.data || []).map(w => ({ ...w, soalCount: soalCounts[w.id] || 0 }));
+    // Peserta unik yang sudah mengerjakan post-test per webinar (satu peserta bisa nyoba berkali-kali,
+    // dihitung sekali aja pakai Set).
+    const completedSets = {};
+    (attemptsRes.data || []).forEach(a => {
+      if (!completedSets[a.webinar_id]) completedSets[a.webinar_id] = new Set();
+      completedSets[a.webinar_id].add(a.peserta_id);
+    });
+
+    webinarList = (webinarsRes.data || []).map(w => ({
+      ...w,
+      soalCount: soalCounts[w.id] || 0,
+      completedCount: completedSets[w.id] ? completedSets[w.id].size : 0
+    }));
+
     renderWebinarCards();
+    renderWebinarProgressPanel();
+  }
+
+  function renderWebinarProgressPanel() {
+    const container = document.getElementById('webinarProgressRows');
+    if (!container) return;
+
+    const totalPeserta = pesertaList.length;
+    if (totalPeserta === 0) {
+      container.innerHTML = '<p style="color:var(--muted);font-size:13px">Belum ada peserta terdaftar.</p>';
+      return;
+    }
+
+    container.innerHTML = webinarList.map(w => {
+      const done = w.completedCount || 0;
+      const pct = Math.round((done / totalPeserta) * 100);
+      return `
+        <div class="progress-row">
+          <div class="progress-row-head">
+            <span class="label">${escapeHtml(w.judul) || ('Webinar ' + w.nomor)}</span>
+            <span class="stat"><b>${done}</b> / ${totalPeserta} peserta &middot; <b>${pct}%</b></span>
+          </div>
+          <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+        </div>
+      `;
+    }).join('');
   }
 
   function renderWebinarCards() {
@@ -875,10 +978,9 @@
             <h3>${escapeHtml(w.judul) || ('Webinar ' + w.nomor)}</h3>
             <div class="webinar-card-sub"><i data-lucide="${w.youtube_url ? 'youtube' : 'link-2-off'}"></i> ${w.youtube_url ? 'Link YouTube terpasang' : 'Belum ada link YouTube'}</div>
           </div>
-          <label class="toggle-switch">
-            <input type="checkbox" data-toggle-webinar="${w.id}" ${w.is_active ? 'checked' : ''}>
-            <span class="toggle-track"></span>
-          </label>
+          <button type="button" class="toggle-switch" data-toggle-webinar="${w.id}" title="${w.is_active ? 'Nonaktifkan' : 'Aktifkan'}">
+            <span class="toggle-track ${w.is_active ? 'on' : ''}"></span>
+          </button>
         </div>
         <div class="webinar-meta">
           <span><i data-lucide="list-checks"></i> ${w.soalCount} soal</span>
@@ -892,36 +994,108 @@
     lucide.createIcons();
   }
 
-  document.getElementById('webinarGrid').addEventListener('change', async (e) => {
-    const toggle = e.target.closest('[data-toggle-webinar]');
-    if (!toggle) return;
-    const id = toggle.dataset.toggleWebinar;
-    const newVal = toggle.checked;
-    toggle.disabled = true;
+  document.getElementById('webinarGrid').addEventListener('click', (e) => {
+    const openBtn = e.target.closest('[data-open-webinar]');
+    if (openBtn) { openWebinarDetail(openBtn.dataset.openWebinar); return; }
+
+    const toggleBtn = e.target.closest('[data-toggle-webinar]');
+    if (toggleBtn) {
+      const id = toggleBtn.dataset.toggleWebinar;
+      const w = webinarList.find(x => x.id === id);
+      if (!w) return;
+      openConfirmToggle(id, !w.is_active);
+    }
+  });
+
+  // ---------- KONFIRMASI PASSWORD SEBELUM TOGGLE AKTIF/NONAKTIF ----------
+  function openConfirmToggle(webinarId, newVal) {
+    const w = webinarList.find(x => x.id === webinarId);
+    if (!w) return;
+    pendingToggle = { webinarId, newVal };
+
+    const nama = w.judul || `Webinar ${w.nomor}`;
+    document.getElementById('confirmToggleTitle').textContent = newVal ? 'Aktifkan Webinar?' : 'Nonaktifkan Webinar?';
+    document.getElementById('confirmToggleText').textContent = newVal
+      ? `"${nama}" akan langsung muncul di LMS peserta. Masukkan password akun Anda untuk konfirmasi.`
+      : `"${nama}" akan disembunyikan dari LMS peserta. Masukkan password akun Anda untuk konfirmasi.`;
+
+    const pwInput = document.getElementById('confirmTogglePassword');
+    pwInput.value = '';
+    const msg = document.getElementById('confirmToggleMsg');
+    msg.textContent = ''; msg.className = 'form-msg';
+
+    document.getElementById('confirmToggleModalBackdrop').classList.add('show');
+    pwInput.focus();
+  }
+
+  function closeConfirmToggle() {
+    document.getElementById('confirmToggleModalBackdrop').classList.remove('show');
+    pendingToggle = null;
+  }
+
+  document.getElementById('btnCloseConfirmToggle').addEventListener('click', closeConfirmToggle);
+  document.getElementById('btnCancelConfirmToggle').addEventListener('click', closeConfirmToggle);
+  document.getElementById('confirmToggleModalBackdrop').addEventListener('click', (e) => {
+    if (e.target.id === 'confirmToggleModalBackdrop') closeConfirmToggle();
+  });
+  document.getElementById('confirmTogglePassword').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('btnConfirmToggle').click();
+  });
+
+  document.getElementById('btnConfirmToggle').addEventListener('click', async () => {
+    if (!pendingToggle) return;
+    const password = document.getElementById('confirmTogglePassword').value;
+    const msg = document.getElementById('confirmToggleMsg');
+    msg.textContent = ''; msg.className = 'form-msg';
+
+    if (!password) { msg.textContent = 'Password wajib diisi.'; msg.classList.add('error'); return; }
+
+    const btn = document.getElementById('btnConfirmToggle');
+    btn.disabled = true;
+
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const email = session.user.email;
+
+    // Verifikasi password lewat klien terpisah (sama seperti klien tambah-admin),
+    // biar sesi admin yang sedang login TIDAK ikut tertimpa.
+    const { error: authError } = await supabaseCreateClient.auth.signInWithPassword({ email, password });
+
+    if (authError) {
+      msg.textContent = 'Password salah.';
+      msg.classList.add('error');
+      btn.disabled = false;
+      return;
+    }
+
+    const { webinarId, newVal } = pendingToggle;
     const { error } = await supabaseClient.from('webinars')
-      .update({ is_active: newVal, updated_at: new Date().toISOString() }).eq('id', id);
-    toggle.disabled = false;
-    if (error) { alert('Gagal mengubah status: ' + error.message); toggle.checked = !newVal; return; }
-    const w = webinarList.find(x => x.id === id);
+      .update({ is_active: newVal, updated_at: new Date().toISOString() }).eq('id', webinarId);
+
+    btn.disabled = false;
+
+    if (error) {
+      msg.textContent = 'Gagal mengubah status: ' + error.message;
+      msg.classList.add('error');
+      return;
+    }
+
+    const w = webinarList.find(x => x.id === webinarId);
     if (w) w.is_active = newVal;
     renderWebinarCards();
+    closeConfirmToggle();
   });
 
-  document.getElementById('webinarGrid').addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-open-webinar]');
-    if (!btn) return;
-    openWebinarModal(btn.dataset.openWebinar);
-  });
-
-  async function openWebinarModal(webinarId) {
+  // ---------- HALAMAN DETAIL WEBINAR (full-page, bukan popup) ----------
+  async function openWebinarDetail(webinarId) {
     const w = webinarList.find(x => x.id === webinarId);
     if (!w) return;
     currentEditingWebinar = w;
 
-    document.getElementById('webinarModalTitle').textContent = w.judul || `Webinar ${w.nomor}`;
+    document.getElementById('webinarDetailTitle').textContent = w.judul || `Webinar ${w.nomor}`;
     document.getElementById('webinarJudulInput').value = w.judul || '';
     document.getElementById('webinarYoutubeInput').value = w.youtube_url || '';
-    const msg = document.getElementById('webinarModalMsg');
+    updateYoutubePreview(w.youtube_url || '');
+    const msg = document.getElementById('webinarDetailMsg');
     msg.textContent = ''; msg.className = 'form-msg';
 
     const { data, error } = await supabaseClient.from('webinar_soal').select('*').eq('webinar_id', webinarId).order('urutan');
@@ -936,21 +1110,47 @@
     }));
 
     renderSoalList();
-    document.getElementById('webinarModalBackdrop').classList.add('show');
+
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-webinar-detail').classList.add('active');
+    document.getElementById('btnTambahSoalFab').classList.add('show');
+    window.scrollTo({ top: 0 });
   }
 
-  function closeWebinarModal() {
-    document.getElementById('webinarModalBackdrop').classList.remove('show');
+  function goBackToWebinarList() {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-webinar').classList.add('active');
+    document.getElementById('btnTambahSoalFab').classList.remove('show');
     currentEditingWebinar = null;
     currentSoalState = [];
   }
 
-  document.getElementById('btnCloseWebinarModal').addEventListener('click', closeWebinarModal);
-  document.getElementById('btnCancelWebinarModal').addEventListener('click', closeWebinarModal);
-  document.getElementById('webinarModalBackdrop').addEventListener('click', (e) => {
-    if (e.target.id === 'webinarModalBackdrop') closeWebinarModal();
+  document.getElementById('btnBackToWebinarList').addEventListener('click', goBackToWebinarList);
+  document.getElementById('btnCancelWebinarDetail').addEventListener('click', goBackToWebinarList);
+
+  // Nav sidebar lain (Ringkasan, Data Peserta, dst) juga harus nutup halaman detail & sembunyiin FAB-nya.
+  document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
+    btn.addEventListener('click', () => { document.getElementById('btnTambahSoalFab').classList.remove('show'); });
   });
 
+  // ---------- PREVIEW EMBED YOUTUBE ----------
+  function extractYoutubeId(url) {
+    if (!url) return null;
+    const m = url.match(/(?:youtube\.com\/watch\?v=|youtube\.com\/embed\/|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
+    return m ? m[1] : null;
+  }
+
+  function updateYoutubePreview(url) {
+    const box = document.getElementById('youtubePreviewBox');
+    const id = extractYoutubeId(url);
+    if (!id) { box.style.display = 'none'; box.innerHTML = ''; return; }
+    box.style.display = 'block';
+    box.innerHTML = `<iframe src="https://www.youtube.com/embed/${id}" title="Preview video webinar" allowfullscreen loading="lazy"></iframe>`;
+  }
+
+  document.getElementById('webinarYoutubeInput').addEventListener('input', (e) => updateYoutubePreview(e.target.value.trim()));
+
+  // ---------- BUILDER SOAL ----------
   function renderSoalList() {
     const container = document.getElementById('soalListContainer');
     const emptyMsg = document.getElementById('emptySoalMsg');
@@ -992,7 +1192,7 @@
     lucide.createIcons();
   }
 
-  document.getElementById('btnTambahSoal').addEventListener('click', () => {
+  function tambahSoalBaru() {
     currentSoalState.push({
       id: null,
       pertanyaan: '',
@@ -1001,7 +1201,14 @@
       umpan_balik: ''
     });
     renderSoalList();
-  });
+    // scroll ke soal yang baru ditambahkan (paling bawah), bukan ke atas
+    const cards = document.querySelectorAll('#soalListContainer .soal-card');
+    const last = cards[cards.length - 1];
+    if (last) last.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  document.getElementById('btnTambahSoalFab').addEventListener('click', tambahSoalBaru);
+  document.getElementById('btnTambahSoalBottom').addEventListener('click', tambahSoalBaru);
 
   const soalListContainer = document.getElementById('soalListContainer');
 
@@ -1056,8 +1263,9 @@
     currentSoalState[sIdx].jawaban_benar = currentSoalState[sIdx].pilihan[pIdx].label;
   });
 
-  document.getElementById('btnSaveWebinarModal').addEventListener('click', async () => {
-    const msg = document.getElementById('webinarModalMsg');
+  // ---------- SIMPAN WEBINAR ----------
+  document.getElementById('btnSaveWebinarDetail').addEventListener('click', async () => {
+    const msg = document.getElementById('webinarDetailMsg');
     msg.textContent = ''; msg.className = 'form-msg';
 
     const judul = document.getElementById('webinarJudulInput').value.trim();
@@ -1070,7 +1278,7 @@
       if (!soal.jawaban_benar) { msg.textContent = `Soal ${i + 1}: belum ditandai jawaban yang benar.`; msg.classList.add('error'); return; }
     }
 
-    const btn = document.getElementById('btnSaveWebinarModal');
+    const btn = document.getElementById('btnSaveWebinarDetail');
     btn.disabled = true;
 
     try {
@@ -1098,8 +1306,8 @@
         if (insertError) throw insertError;
       }
 
-      closeWebinarModal();
       await loadWebinars();
+      goBackToWebinarList();
     } catch (err) {
       msg.textContent = 'Gagal menyimpan: ' + err.message;
       msg.classList.add('error');

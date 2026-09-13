@@ -42,6 +42,12 @@
 
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:12px 22px;border-radius:100px;font-weight:600;font-size:14px;transition:transform .2s ease, box-shadow .2s ease, background .2s ease;white-space:nowrap}
   .btn svg{width:16px;height:16px}
+  .btn-primary{background:var(--blue);color:#fff;box-shadow:0 14px 28px -14px rgba(33,91,220,.55)}
+  .btn-primary:hover{background:#1a4bc0}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+  .btn-outline{border:1.5px solid var(--line);color:var(--navy-deep);background:#fff}
+  .btn-outline:hover{border-color:var(--blue);color:var(--blue)}
+  .btn-sm{padding:9px 16px;font-size:13px}
 
   /* ---------- App shell ---------- */
   .app-shell{display:flex;min-height:100vh}
@@ -109,6 +115,74 @@
   .panel{display:none}
   .panel.active{display:block}
 
+  /* ---------- WEBINAR: layout 2 kolom (video + info), post-test, & review ---------- */
+  .webinar-layout{display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:4px}
+  @media (max-width:800px){ .webinar-layout{grid-template-columns:1fr} }
+
+  .webinar-video{position:relative;width:100%;border-radius:16px;overflow:hidden;aspect-ratio:16/9;background:#0b1730}
+  .webinar-video iframe{width:100%;height:100%;border:0;display:block}
+
+  .webinar-info-card{background:var(--paper);border:1.5px solid var(--line);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:14px}
+  .webinar-info-title{font-size:15px;font-weight:700;color:var(--navy-deep);line-height:1.4}
+  .webinar-info-row{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--muted);font-weight:600;line-height:1.4}
+  .webinar-info-row svg{width:16px;height:16px;flex-shrink:0}
+  .webinar-info-row.status-done{color:var(--acc2)}
+  .webinar-info-divider{border-top:1px solid var(--line)}
+  .webinar-cta{margin-top:auto}
+  .webinar-cta .btn{width:100%}
+
+  .quiz-submit-card{background:var(--paper);border:1.5px solid var(--line);border-radius:16px;padding:22px;text-align:center;margin-top:6px}
+  .quiz-submit-card p{margin-bottom:14px;font-size:12.5px;color:var(--muted)}
+  .quiz-submit-card .btn{width:100%}
+
+  .status-dot{width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+  .status-dot svg{width:11px;height:11px;stroke-width:3}
+  .status-dot-done{background:var(--green);color:#fff}
+  .status-dot-pending{background:var(--line);color:var(--muted)}
+
+  .webinar-progress-card{display:flex;align-items:center;gap:14px;background:rgba(119,101,200,.08);border:1px solid rgba(119,101,200,.25);border-radius:14px;padding:16px 20px}
+  .webinar-progress-card .ic{width:42px;height:42px;border-radius:12px;background:rgba(119,101,200,.15);color:var(--acc4);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .webinar-progress-card .ic svg{width:19px;height:19px}
+  .webinar-progress-card .num{font-size:20px;font-weight:800;color:var(--navy-deep);line-height:1.2}
+  .webinar-progress-card .lbl{font-size:12.5px;color:var(--muted);font-weight:600}
+
+  .score-badge{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:700;padding:9px 16px;border-radius:100px;background:rgba(9,143,135,.1);color:var(--acc2)}
+  .score-badge svg{width:15px;height:15px}
+
+  .quiz-question{border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:22px}
+  .quiz-question:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+  .quiz-question-num{font-size:12.5px;font-weight:700;color:var(--blue);margin-bottom:8px}
+  .quiz-question-text{font-size:14.5px;font-weight:700;color:var(--navy-deep);margin-bottom:14px;line-height:1.5}
+  .quiz-option{display:flex;align-items:flex-start;gap:11px;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;margin-bottom:9px;cursor:pointer;transition:border-color .2s ease, background .2s ease}
+  .quiz-option:hover{border-color:var(--blue)}
+  .quiz-option.selected{border-color:var(--blue);background:rgba(33,91,220,.05)}
+  .quiz-option input{margin-top:2px;accent-color:var(--blue);flex-shrink:0}
+  .quiz-option .opt-label{font-weight:700;color:var(--navy-deep);flex-shrink:0}
+  .quiz-option .opt-text{font-size:13.5px;color:var(--ink);line-height:1.5}
+
+  .review-question{border:1.5px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px}
+  .review-question.correct{border-color:rgba(40,184,118,.35);background:rgba(40,184,118,.05)}
+  .review-question.incorrect{border-color:rgba(229,72,77,.35);background:rgba(229,72,77,.05)}
+  .review-verdict{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;margin-bottom:10px}
+  .review-verdict svg{width:14px;height:14px}
+  .review-verdict.correct{color:var(--green)}
+  .review-verdict.incorrect{color:var(--red)}
+  .review-answer-row{font-size:13px;margin-bottom:5px;line-height:1.5}
+  .review-answer-row .lbl{color:var(--muted);font-weight:600}
+  .review-feedback{margin-top:10px;padding:11px 14px;background:var(--paper);border-radius:10px;font-size:13px;color:var(--ink);line-height:1.6}
+
+  /* ---------- EDIT BIODATA ---------- */
+  .form-grid{display:grid;grid-template-columns:1fr;gap:16px}
+  @media (min-width:640px){ .form-grid{grid-template-columns:1fr 1fr} }
+  .form-grid .full{grid-column:1 / -1}
+  .form-field label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px}
+  .form-field input,.form-field textarea{width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;outline:none;background:var(--paper);font-family:inherit}
+  .form-field input:focus,.form-field textarea:focus{border-color:var(--blue);background:#fff}
+  .form-field textarea{resize:vertical}
+  .form-msg{font-size:12.5px;font-weight:600;margin-top:4px}
+  .form-msg.error{color:#b91c1c}
+  .form-msg.success{color:var(--green)}
+
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 
   /* ---------- Responsive: off-canvas sidebar ---------- */
@@ -137,15 +211,19 @@
       <button type="button" class="nav-item active" data-panel="biodata">
         <i data-lucide="id-card"></i> Biodata
       </button>
-      <button type="button" class="nav-item" data-panel="webinar1">
+      <button type="button" class="nav-item" data-panel="webinar-1">
         <i data-lucide="video"></i> Webinar 1
-        <span class="badge-dev">Segera</span>
+        <span class="badge-dev" data-webinar-nav-badge="1">Segera</span>
       </button>
-      <button type="button" class="nav-item" data-panel="webinar2">
+      <button type="button" class="nav-item" data-panel="webinar-2">
         <i data-lucide="video"></i> Webinar 2
-        <span class="badge-dev">Segera</span>
+        <span class="badge-dev" data-webinar-nav-badge="2">Segera</span>
       </button>
-      <button type="button" class="nav-item" data-panel="tantangan">
+      <button type="button" class="nav-item" data-panel="webinar-3">
+        <i data-lucide="video"></i> Webinar 3
+        <span class="badge-dev" data-webinar-nav-badge="3">Segera</span>
+      </button>
+      <button type="button" class="nav-item" data-panel="tantangan" style="display:none">
         <i data-lucide="target"></i> Tantangan
         <span class="badge-dev">Segera</span>
       </button>
@@ -171,11 +249,29 @@
       <p class="error-box" id="pageError"><i data-lucide="alert-circle"></i> <span id="pageErrorMsg"></span></p>
 
       <div class="panel active" data-panel="biodata">
-        <div class="card">
+        <div class="card" id="progresPosttestCard" style="display:none">
           <div class="section-title">
-            <span class="ic ic-acc2"><i data-lucide="id-card"></i></span>
-            <div>Biodata Saya</div>
+            <span class="ic ic-acc4"><i data-lucide="graduation-cap"></i></span>
+            <div>Progres Post-test</div>
           </div>
+          <div class="webinar-progress-card">
+            <div class="ic"><i data-lucide="graduation-cap"></i></div>
+            <div>
+              <div class="num" id="webinarProgressNum">0/0</div>
+              <div class="lbl">Webinar dengan post-test yang sudah dikerjakan</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-title" style="justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:12px">
+              <span class="ic ic-acc2"><i data-lucide="id-card"></i></span>
+              <div>Biodata Saya</div>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" id="btnEditBiodata"><i data-lucide="pencil"></i> Edit Data</button>
+          </div>
+
           <div class="bio-grid" id="bioGrid">
             <div class="bio-item"><div class="label">Nama Lengkap</div><div class="value skel" data-field="nama">&nbsp;</div></div>
             <div class="bio-item"><div class="label">Email Belajar.id</div><div class="value skel" data-field="email">&nbsp;</div></div>
@@ -188,25 +284,51 @@
             <div class="bio-item"><div class="label">Mata Pelajaran</div><div class="value skel" data-field="mapel">&nbsp;</div></div>
             <div class="bio-item full"><div class="label">Alamat Instansi</div><div class="value skel" data-field="alamat_instansi">&nbsp;</div></div>
           </div>
-        </div>
-      </div>
 
-      <div class="panel" data-panel="webinar1">
-        <div class="card">
-          <div class="empty-state">
-            <div class="ic"><i data-lucide="hammer"></i></div>
-            <div class="t">Webinar 1 sedang dalam pengembangan</div>
-            <p>Menu ini akan segera aktif. Nantikan pembaruannya di sini.</p>
+          <div id="bioEditForm" style="display:none">
+            <form id="formEditBiodata" class="form-grid">
+              <div class="form-field"><label for="editNama">Nama Lengkap</label><input type="text" id="editNama" required></div>
+              <div class="form-field"><label for="editNik">NIK KTP</label><input type="text" id="editNik"></div>
+              <div class="form-field"><label for="editWhatsapp">No. WhatsApp</label><input type="text" id="editWhatsapp"></div>
+              <div class="form-field"><label for="editNpsn">NPSN Sekolah</label><input type="text" id="editNpsn"></div>
+              <div class="form-field"><label for="editNamaSekolah">Nama Sekolah</label><input type="text" id="editNamaSekolah"></div>
+              <div class="form-field"><label for="editProvinsi">Provinsi</label><input type="text" id="editProvinsi"></div>
+              <div class="form-field"><label for="editKabkota">Kota / Kabupaten</label><input type="text" id="editKabkota"></div>
+              <div class="form-field"><label for="editMapel">Mata Pelajaran</label><input type="text" id="editMapel"></div>
+              <div class="form-field full"><label for="editAlamatInstansi">Alamat Instansi</label><textarea id="editAlamatInstansi" rows="2"></textarea></div>
+              <div class="full" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <button type="submit" class="btn btn-primary btn-sm" id="btnSimpanBiodata"><i data-lucide="save"></i> Simpan Perubahan</button>
+                <button type="button" class="btn btn-outline btn-sm" id="btnBatalEditBiodata">Batal</button>
+                <p class="form-msg" id="editBiodataMsg" style="margin:0"></p>
+              </div>
+            </form>
           </div>
         </div>
       </div>
 
-      <div class="panel" data-panel="webinar2">
-        <div class="card">
+      <div class="panel" data-panel="webinar-1">
+        <div class="card" data-webinar-panel="1">
           <div class="empty-state">
             <div class="ic"><i data-lucide="hammer"></i></div>
-            <div class="t">Webinar 2 sedang dalam pengembangan</div>
-            <p>Menu ini akan segera aktif. Nantikan pembaruannya di sini.</p>
+            <div class="t">Memuat...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" data-panel="webinar-2">
+        <div class="card" data-webinar-panel="2">
+          <div class="empty-state">
+            <div class="ic"><i data-lucide="hammer"></i></div>
+            <div class="t">Memuat...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" data-panel="webinar-3">
+        <div class="card" data-webinar-panel="3">
+          <div class="empty-state">
+            <div class="ic"><i data-lucide="hammer"></i></div>
+            <div class="t">Memuat...</div>
           </div>
         </div>
       </div>
@@ -322,6 +444,330 @@
     fillField('kabkota', profile.kabkota);
     fillField('mapel', profile.mapel);
     fillField('alamat_instansi', profile.alamat_instansi);
+    profileCache = profile;
+
+    await loadWebinarsForPeserta(userId);
+  }
+
+  // ---------- EDIT BIODATA ----------
+  let profileCache = null;
+
+  document.getElementById('btnEditBiodata').addEventListener('click', () => {
+    if (!profileCache) return;
+    document.getElementById('editNama').value = profileCache.nama || '';
+    document.getElementById('editNik').value = profileCache.nik || '';
+    document.getElementById('editWhatsapp').value = profileCache.whatsapp || '';
+    document.getElementById('editNpsn').value = profileCache.npsn || '';
+    document.getElementById('editNamaSekolah').value = profileCache.nama_sekolah || '';
+    document.getElementById('editProvinsi').value = profileCache.provinsi || '';
+    document.getElementById('editKabkota').value = profileCache.kabkota || '';
+    document.getElementById('editMapel').value = profileCache.mapel || '';
+    document.getElementById('editAlamatInstansi').value = profileCache.alamat_instansi || '';
+    const msg = document.getElementById('editBiodataMsg');
+    msg.textContent = ''; msg.className = 'form-msg';
+    document.getElementById('bioGrid').style.display = 'none';
+    document.getElementById('bioEditForm').style.display = 'block';
+  });
+
+  document.getElementById('btnBatalEditBiodata').addEventListener('click', () => {
+    document.getElementById('bioEditForm').style.display = 'none';
+    document.getElementById('bioGrid').style.display = 'grid';
+  });
+
+  document.getElementById('formEditBiodata').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('editBiodataMsg');
+    msg.textContent = ''; msg.className = 'form-msg';
+
+    const updates = {
+      nama: document.getElementById('editNama').value.trim(),
+      nik: document.getElementById('editNik').value.trim(),
+      whatsapp: document.getElementById('editWhatsapp').value.trim(),
+      npsn: document.getElementById('editNpsn').value.trim(),
+      nama_sekolah: document.getElementById('editNamaSekolah').value.trim(),
+      provinsi: document.getElementById('editProvinsi').value.trim(),
+      kabkota: document.getElementById('editKabkota').value.trim(),
+      mapel: document.getElementById('editMapel').value.trim(),
+      alamat_instansi: document.getElementById('editAlamatInstansi').value.trim()
+    };
+
+    const btn = document.getElementById('btnSimpanBiodata');
+    btn.disabled = true;
+
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const { error } = await supabaseClient.from('profiles').update(updates).eq('id', session.user.id);
+
+    btn.disabled = false;
+
+    if (error) {
+      msg.textContent = 'Gagal menyimpan perubahan: ' + error.message;
+      msg.classList.add('error');
+      return;
+    }
+
+    profileCache = { ...profileCache, ...updates };
+    Object.keys(updates).forEach(key => fillField(key, updates[key]));
+
+    const sidebarUserName = document.getElementById('sidebarUserName');
+    sidebarUserName.textContent = updates.nama;
+
+    document.getElementById('bioEditForm').style.display = 'none';
+    document.getElementById('bioGrid').style.display = 'grid';
+  });
+
+  // ---------- WEBINAR: video, post-test (gaya Google Form), & review ----------
+  let currentQuiz = null; // { webinarId, nomor, soal, jawaban: {soalId: label} }
+
+  function escapeHtml(str) { return String(str || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+  function escapeAttr(str) { return String(str || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  function extractYoutubeId(url) {
+    if (!url) return null;
+    const m = url.match(/(?:youtube\.com\/watch\?v=|youtube\.com\/embed\/|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
+    return m ? m[1] : null;
+  }
+
+  async function loadWebinarsForPeserta(userId) {
+    const [webinarsRes, attemptsRes, soalRes] = await Promise.all([
+      supabaseClient.from('webinars').select('*').order('nomor'),
+      supabaseClient.from('peserta_pretest').select('webinar_id, skor, total_soal').eq('peserta_id', userId),
+      supabaseClient.from('webinar_soal').select('id, webinar_id')
+    ]);
+    if (webinarsRes.error) { showPageError('Gagal memuat data webinar: ' + webinarsRes.error.message); return; }
+
+    // Skor terbaik per webinar (peserta boleh coba berkali-kali, kita ambil yang paling tinggi).
+    const bestByWebinar = {};
+    (attemptsRes.data || []).forEach(a => {
+      const cur = bestByWebinar[a.webinar_id];
+      if (!cur || a.skor > cur.skor) bestByWebinar[a.webinar_id] = a;
+    });
+
+    const soalCounts = {};
+    (soalRes.data || []).forEach(s => { soalCounts[s.webinar_id] = (soalCounts[s.webinar_id] || 0) + 1; });
+
+    const webinars = webinarsRes.data || [];
+    webinars.forEach(w => {
+      renderWebinarNavBadge(w);
+      renderWebinarPanel(w, bestByWebinar[w.id] || null, soalCounts[w.id] || 0);
+    });
+
+    renderWebinarProgressStat(Object.keys(bestByWebinar).length, webinars.length);
+  }
+
+  function renderWebinarNavBadge(w) {
+    const badge = document.querySelector(`[data-webinar-nav-badge="${w.nomor}"]`);
+    if (badge) badge.style.display = w.is_active ? 'none' : 'inline-flex';
+  }
+
+  function renderWebinarProgressStat(done, total) {
+    const card = document.getElementById('progresPosttestCard');
+    const num = document.getElementById('webinarProgressNum');
+    if (!card || !num || total === 0) return;
+    num.textContent = `${done}/${total}`;
+    card.style.display = 'block';
+  }
+
+  function renderWebinarPanel(w, bestAttempt, soalCount) {
+    const container = document.querySelector(`[data-webinar-panel="${w.nomor}"]`);
+    if (!container) return;
+
+    if (!w.is_active) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="ic"><i data-lucide="hammer"></i></div>
+          <div class="t">${escapeHtml(w.judul) || ('Webinar ' + w.nomor)} belum dibuka</div>
+          <p>Menu ini akan aktif begitu jadwalnya tiba. Nantikan pembaruannya di sini.</p>
+        </div>
+      `;
+      lucide.createIcons();
+      return;
+    }
+
+    renderWebinarIdleState(w, bestAttempt, soalCount);
+  }
+
+  function renderWebinarIdleState(w, bestAttempt, soalCount) {
+    const container = document.querySelector(`[data-webinar-panel="${w.nomor}"]`);
+    const judul = w.judul ? escapeHtml(w.judul) : ('Webinar ' + w.nomor);
+    const videoId = extractYoutubeId(w.youtube_url || '');
+    const videoHtml = videoId
+      ? `<div class="webinar-video"><iframe src="https://www.youtube.com/embed/${videoId}" title="${escapeAttr(w.judul || 'Webinar ' + w.nomor)}" allowfullscreen loading="lazy"></iframe></div>`
+      : `<div class="empty-state" style="padding:24px 16px"><div class="ic"><i data-lucide="video-off"></i></div><p>Link video belum tersedia.</p></div>`;
+
+    const statusRow = bestAttempt
+      ? `<div class="webinar-info-row status-done"><span class="status-dot status-dot-done"><i data-lucide="check"></i></span> Sudah dikerjakan — skor ${bestAttempt.skor}/${bestAttempt.total_soal}</div>`
+      : `<div class="webinar-info-row"><span class="status-dot status-dot-pending"><i data-lucide="minus"></i></span> Belum dikerjakan</div>`;
+
+    container.innerHTML = `
+      <div class="section-title">
+        <span class="ic ic-acc4"><i data-lucide="video"></i></span>
+        <div>Webinar ${w.nomor}${w.judul ? ': ' + judul : ''}</div>
+      </div>
+      <div class="webinar-layout">
+        <div>${videoHtml}</div>
+        <div class="webinar-info-card">
+          <div class="webinar-info-title">${judul}</div>
+          <div class="webinar-info-row"><i data-lucide="list-checks"></i> ${soalCount} Soal Post-test</div>
+          ${statusRow}
+          <div class="webinar-info-divider"></div>
+          <div class="webinar-cta">
+            <button type="button" class="btn btn-primary" data-start-pretest="${w.id}" data-webinar-nomor="${w.nomor}">
+              <i data-lucide="pencil-line"></i> ${bestAttempt ? 'Coba Lagi Post-test' : 'Kerjakan Post-test'}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    lucide.createIcons();
+  }
+
+  document.addEventListener('click', (e) => {
+    const startBtn = e.target.closest('[data-start-pretest]');
+    if (startBtn) startPretest(startBtn.dataset.startPretest, startBtn.dataset.webinarNomor);
+  });
+
+  async function startPretest(webinarId, nomor) {
+    const container = document.querySelector(`[data-webinar-panel="${nomor}"]`);
+    container.innerHTML = `<div class="empty-state"><p>Memuat soal...</p></div>`;
+
+    const { data: soal, error } = await supabaseClient.from('webinar_soal').select('*').eq('webinar_id', webinarId).order('urutan');
+    if (error || !soal || soal.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="ic"><i data-lucide="alert-circle"></i></div>
+          <div class="t">Soal belum tersedia</div>
+          <p>Post-test untuk webinar ini belum disiapkan admin. Coba lagi nanti.</p>
+        </div>
+      `;
+      lucide.createIcons();
+      return;
+    }
+
+    currentQuiz = { webinarId, nomor, soal, jawaban: {} };
+    renderQuizForm();
+  }
+
+  function renderQuizForm() {
+    const { nomor, soal } = currentQuiz;
+    const container = document.querySelector(`[data-webinar-panel="${nomor}"]`);
+    container.innerHTML = `
+      <div class="section-title">
+        <span class="ic ic-acc4"><i data-lucide="clipboard-list"></i></span>
+        <div>Post-test — ${soal.length} Soal</div>
+      </div>
+      ${soal.map((s, i) => `
+        <div class="quiz-question">
+          <div class="quiz-question-num">Soal ${i + 1} dari ${soal.length}</div>
+          <div class="quiz-question-text">${escapeHtml(s.pertanyaan)}</div>
+          ${(s.pilihan || []).map(p => `
+            <label class="quiz-option" data-soal-id="${s.id}" data-pilihan-label="${p.label}">
+              <input type="radio" name="quiz-${s.id}" value="${p.label}">
+              <span class="opt-label">${p.label}.</span>
+              <span class="opt-text">${escapeHtml(p.text)}</span>
+            </label>
+          `).join('')}
+        </div>
+      `).join('')}
+      <p id="quizMsg-${nomor}" style="color:#b91c1c;font-weight:600;font-size:13px"></p>
+      <div class="quiz-submit-card">
+        <p>Pastikan semua soal sudah dijawab sebelum mengumpulkan — jawaban tidak bisa diubah lagi setelah dikumpulkan.</p>
+        <button type="button" class="btn btn-primary" id="btnSubmitQuiz-${nomor}"><i data-lucide="send"></i> Kumpulkan Jawaban</button>
+      </div>
+    `;
+    lucide.createIcons();
+
+    container.querySelectorAll('.quiz-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        const soalId = opt.dataset.soalId;
+        const label = opt.dataset.pilihanLabel;
+        currentQuiz.jawaban[soalId] = label;
+        opt.querySelector('input').checked = true;
+        container.querySelectorAll(`.quiz-option[data-soal-id="${soalId}"]`).forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+      });
+    });
+
+    document.getElementById(`btnSubmitQuiz-${nomor}`).addEventListener('click', submitQuiz);
+  }
+
+  async function submitQuiz() {
+    const { webinarId, nomor, soal, jawaban } = currentQuiz;
+    const msg = document.getElementById(`quizMsg-${nomor}`);
+
+    const unanswered = soal.filter(s => !jawaban[s.id]);
+    if (unanswered.length > 0) {
+      msg.textContent = `Masih ada ${unanswered.length} soal yang belum dijawab.`;
+      return;
+    }
+    msg.textContent = '';
+
+    const btn = document.getElementById(`btnSubmitQuiz-${nomor}`);
+    btn.disabled = true;
+
+    let skor = 0;
+    const detailRows = soal.map(s => {
+      const dipilih = jawaban[s.id];
+      const benar = dipilih === s.jawaban_benar;
+      if (benar) skor++;
+      return { soal_id: s.id, pilihan_dipilih: dipilih, benar };
+    });
+
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const pesertaId = session.user.id;
+
+    const { data: pretestRow, error: pretestError } = await supabaseClient.from('peserta_pretest')
+      .insert({ webinar_id: webinarId, peserta_id: pesertaId, skor, total_soal: soal.length })
+      .select().single();
+
+    if (pretestError) {
+      msg.textContent = 'Gagal menyimpan jawaban: ' + pretestError.message;
+      btn.disabled = false;
+      return;
+    }
+
+    const jawabanRows = detailRows.map(d => ({ ...d, pretest_id: pretestRow.id }));
+    const { error: detailError } = await supabaseClient.from('peserta_pretest_jawaban').insert(jawabanRows);
+    if (detailError) {
+      msg.textContent = 'Gagal menyimpan detail jawaban: ' + detailError.message;
+      btn.disabled = false;
+      return;
+    }
+
+    renderQuizReview(soal, jawaban, skor, nomor);
+  }
+
+  function renderQuizReview(soal, jawaban, skor, nomor) {
+    const container = document.querySelector(`[data-webinar-panel="${nomor}"]`);
+    container.innerHTML = `
+      <div class="section-title">
+        <span class="ic ic-acc2"><i data-lucide="check-circle"></i></span>
+        <div>Hasil Post-test</div>
+      </div>
+      <div class="score-badge" style="font-size:15px;padding:12px 20px;margin-bottom:22px"><i data-lucide="award"></i> ${skor} dari ${soal.length} jawaban benar</div>
+      ${soal.map((s, i) => {
+        const dipilih = jawaban[s.id];
+        const benar = dipilih === s.jawaban_benar;
+        const pilihanBenar = (s.pilihan || []).find(p => p.label === s.jawaban_benar);
+        const pilihanDipilih = (s.pilihan || []).find(p => p.label === dipilih);
+        return `
+          <div class="review-question ${benar ? 'correct' : 'incorrect'}">
+            <div class="review-verdict ${benar ? 'correct' : 'incorrect'}">
+              <i data-lucide="${benar ? 'check-circle' : 'x-circle'}"></i> ${benar ? 'Benar' : 'Kurang Tepat'}
+            </div>
+            <div class="quiz-question-text" style="margin-bottom:10px">Soal ${i + 1}. ${escapeHtml(s.pertanyaan)}</div>
+            <div class="review-answer-row"><span class="lbl">Jawaban kamu:</span> ${dipilih}. ${escapeHtml(pilihanDipilih ? pilihanDipilih.text : '-')}</div>
+            ${!benar ? `<div class="review-answer-row"><span class="lbl">Jawaban benar:</span> ${s.jawaban_benar}. ${escapeHtml(pilihanBenar ? pilihanBenar.text : '-')}</div>` : ''}
+            ${s.umpan_balik ? `<div class="review-feedback">${escapeHtml(s.umpan_balik)}</div>` : ''}
+          </div>
+        `;
+      }).join('')}
+      <button type="button" class="btn btn-outline" id="btnBackToIdle-${nomor}" style="width:100%;margin-top:6px"><i data-lucide="arrow-left"></i> Kembali</button>
+    `;
+    lucide.createIcons();
+
+    document.getElementById(`btnBackToIdle-${nomor}`).addEventListener('click', async () => {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      await loadWebinarsForPeserta(session.user.id);
+    });
   }
 
   init();
