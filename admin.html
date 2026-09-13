@@ -161,6 +161,62 @@
 
   .badge-dev{margin-left:auto;font-size:9.5px;font-weight:700;letter-spacing:.02em;color:#bcd4ff;background:rgba(255,255,255,.12);padding:3px 8px;border-radius:100px;flex-shrink:0}
 
+  /* KELOLA WEBINAR */
+  .webinar-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+  .webinar-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;gap:14px}
+  .webinar-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .webinar-card-top h3{font-size:15.5px;font-weight:700;color:var(--navy-deep)}
+  .webinar-card-sub{font-size:12px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:5px}
+  .webinar-card-sub svg{width:12px;height:12px;flex-shrink:0}
+  .webinar-meta{display:flex;align-items:center;gap:14px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+  .webinar-meta span{display:flex;align-items:center;gap:5px}
+  .webinar-meta svg{width:14px;height:14px}
+  .webinar-card-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto;padding-top:6px;border-top:1px solid var(--line)}
+
+  .toggle-switch{position:relative;display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+  .toggle-switch input{position:absolute;opacity:0;width:0;height:0}
+  .toggle-track{width:38px;height:22px;background:#d8deec;border-radius:100px;position:relative;transition:background .2s ease;flex-shrink:0}
+  .toggle-track::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .2s ease;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+  .toggle-switch input:checked + .toggle-track{background:var(--green)}
+  .toggle-switch input:checked + .toggle-track::after{transform:translateX(16px)}
+  .toggle-label{font-size:12px;font-weight:700;color:var(--muted)}
+  .toggle-switch input:checked ~ .toggle-label{color:var(--green)}
+
+  /* MODAL */
+  .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(7,16,38,.55);z-index:200;align-items:center;justify-content:center;padding:20px}
+  .modal-backdrop.show{display:flex}
+  .modal-box{background:#fff;border-radius:18px;width:100%;max-width:520px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 30px 70px -20px rgba(7,27,63,.45)}
+  .modal-box.modal-lg{max-width:660px}
+  .modal-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--line);flex-shrink:0}
+  .modal-header h2{font-size:16.5px;font-weight:700}
+  .modal-close{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0}
+  .modal-close:hover{background:var(--paper);color:var(--ink)}
+  .modal-close svg{width:17px;height:17px}
+  .modal-body{padding:22px 24px;overflow-y:auto;flex:1}
+  .modal-footer{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:16px 24px;border-top:1px solid var(--line);flex-shrink:0}
+  .modal-footer .form-msg{margin:0;margin-right:auto}
+
+  .form-field textarea{width:100%;padding:10px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;outline:none;background:var(--paper);resize:vertical;font-family:inherit}
+  .form-field textarea:focus{border-color:var(--blue);background:#fff}
+
+  .soal-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .soal-card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+  .soal-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .soal-number{font-size:12.5px;font-weight:700;color:var(--blue);background:rgba(33,91,220,.1);padding:4px 10px;border-radius:100px}
+  .btn-icon-danger{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--red);flex-shrink:0}
+  .btn-icon-danger:hover{background:#fee2e2}
+  .btn-icon-danger svg{width:15px;height:15px}
+  .btn-icon-muted{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0}
+  .btn-icon-muted:hover{background:#fee2e2;color:var(--red)}
+  .btn-icon-muted svg{width:13px;height:13px}
+
+  .pilihan-list{display:flex;flex-direction:column;gap:8px;margin:10px 0}
+  .pilihan-row{display:flex;align-items:center;gap:9px}
+  .pilihan-row input[type="radio"]{width:16px;height:16px;accent-color:var(--green);flex-shrink:0;cursor:pointer}
+  .pilihan-label{width:20px;height:20px;border-radius:6px;background:#fff;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--navy-deep);flex-shrink:0}
+  .pilihan-text-input{flex:1;padding:8px 12px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;outline:none;background:#fff}
+  .pilihan-text-input:focus{border-color:var(--blue)}
+
   /* FORM (Tambah Admin Baru) */
   .form-grid{display:grid;grid-template-columns:1fr;gap:14px;max-width:420px}
   @media (min-width:560px){ .form-grid{grid-template-columns:1fr 1fr} }
@@ -202,7 +258,7 @@
     <nav class="sidebar-nav">
       <button type="button" class="nav-item active" data-view="ringkasan"><i data-lucide="layout-dashboard"></i> Ringkasan</button>
       <button type="button" class="nav-item" data-view="peserta"><i data-lucide="users"></i> Data Peserta</button>
-      <button type="button" class="nav-item" data-view="post-test"><i data-lucide="clipboard-list"></i> Kelola Post-test <span class="badge-dev">Segera</span></button>
+      <button type="button" class="nav-item" data-view="webinar"><i data-lucide="clapperboard"></i> Kelola Webinar</button>
       <button type="button" class="nav-item" data-view="kelola-admin"><i data-lucide="shield"></i> Kelola Admin</button>
     </nav>
     <div class="sidebar-footer">
@@ -324,20 +380,18 @@
       </div>
     </section>
 
-    <!-- ===== KELOLA POST-TEST ===== -->
-    <section class="view" id="view-post-test">
+    <!-- ===== KELOLA WEBINAR ===== -->
+    <section class="view" id="view-webinar">
       <div class="content-header">
         <div>
-          <h1>Kelola Post-test</h1>
-          <p>Buat &amp; kelola soal post-test untuk Webinar 1 &amp; Webinar 2.</p>
+          <h1>Kelola Webinar</h1>
+          <p>Atur link YouTube &amp; soal pretest tiap webinar, lalu aktifkan biar muncul di LMS peserta.</p>
         </div>
       </div>
-      <div class="panel">
-        <div class="empty-state" style="text-align:center;padding:30px 16px;color:var(--muted)">
-          <div style="width:46px;height:46px;border-radius:50%;background:var(--paper);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;color:var(--muted)"><i data-lucide="hammer"></i></div>
-          <div style="font-weight:700;color:var(--navy-deep);font-size:14.5px;margin-bottom:6px">Kelola Post-test sedang dalam pengembangan</div>
-          <p style="font-size:13.5px;line-height:1.6">Menu ini akan segera aktif untuk membuat soal post-test Webinar 1 &amp; 2.</p>
-        </div>
+      <div class="webinar-grid" id="webinarGrid">
+        <div class="webinar-card"><span class="skel-text" style="width:60%"></span></div>
+        <div class="webinar-card"><span class="skel-text" style="width:60%"></span></div>
+        <div class="webinar-card"><span class="skel-text" style="width:60%"></span></div>
       </div>
     </section>
 
@@ -391,6 +445,38 @@
     </div>
   </div>
 
+</div>
+
+<!-- ===== MODAL KELOLA WEBINAR ===== -->
+<div class="modal-backdrop" id="webinarModalBackdrop">
+  <div class="modal-box modal-lg">
+    <div class="modal-header">
+      <h2 id="webinarModalTitle">Kelola Webinar</h2>
+      <button type="button" class="modal-close" id="btnCloseWebinarModal"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field full" style="margin-bottom:14px">
+        <label for="webinarJudulInput">Judul Webinar</label>
+        <input type="text" id="webinarJudulInput" placeholder="Misal: Webinar 1 - Pembukaan Program">
+      </div>
+      <div class="form-field full" style="margin-bottom:22px">
+        <label for="webinarYoutubeInput">Link YouTube</label>
+        <input type="text" id="webinarYoutubeInput" placeholder="https://youtube.com/watch?v=...">
+      </div>
+
+      <div class="soal-section-header">
+        <div class="panel-title" style="margin-bottom:0">Soal Pretest</div>
+        <button type="button" class="btn btn-outline btn-sm" id="btnTambahSoal"><i data-lucide="plus"></i> Tambah Soal</button>
+      </div>
+      <div id="soalListContainer"></div>
+      <p id="emptySoalMsg" style="display:none;color:var(--muted);font-size:13px;text-align:center;padding:24px 0">Belum ada soal. Klik &quot;Tambah Soal&quot; buat mulai bikin soal pretest.</p>
+    </div>
+    <div class="modal-footer">
+      <p class="form-msg" id="webinarModalMsg"></p>
+      <button type="button" class="btn btn-outline btn-sm" id="btnCancelWebinarModal">Batal</button>
+      <button type="button" class="btn btn-primary btn-sm" id="btnSaveWebinarModal"><i data-lucide="save"></i> Simpan</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -463,6 +549,7 @@
     if (roleData.role !== 'admin') { window.location.href = 'lms.html'; return; }
 
     await loadData();
+    await loadWebinars();
   }
 
   const PAGE_SIZE = 15;
@@ -750,6 +837,271 @@
       await loadData();
     } catch (err) {
       msg.textContent = 'Gagal membuat admin: ' + err.message;
+      msg.classList.add('error');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ---------- KELOLA WEBINAR ----------
+  let webinarList = [];
+  let currentEditingWebinar = null;
+  let currentSoalState = [];
+
+  function labelFor(i) { return String.fromCharCode(65 + i); } // 0->A, 1->B, ...
+  function escapeHtml(str) { return String(str || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+  function escapeAttr(str) { return String(str || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+  async function loadWebinars() {
+    const [webinarsRes, soalRes] = await Promise.all([
+      supabaseClient.from('webinars').select('*').order('nomor'),
+      supabaseClient.from('webinar_soal').select('id, webinar_id')
+    ]);
+    if (webinarsRes.error) { showPageError('Gagal memuat data webinar: ' + webinarsRes.error.message); return; }
+
+    const soalCounts = {};
+    (soalRes.data || []).forEach(s => { soalCounts[s.webinar_id] = (soalCounts[s.webinar_id] || 0) + 1; });
+
+    webinarList = (webinarsRes.data || []).map(w => ({ ...w, soalCount: soalCounts[w.id] || 0 }));
+    renderWebinarCards();
+  }
+
+  function renderWebinarCards() {
+    const grid = document.getElementById('webinarGrid');
+    grid.innerHTML = webinarList.map(w => `
+      <div class="webinar-card">
+        <div class="webinar-card-top">
+          <div>
+            <h3>${escapeHtml(w.judul) || ('Webinar ' + w.nomor)}</h3>
+            <div class="webinar-card-sub"><i data-lucide="${w.youtube_url ? 'youtube' : 'link-2-off'}"></i> ${w.youtube_url ? 'Link YouTube terpasang' : 'Belum ada link YouTube'}</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" data-toggle-webinar="${w.id}" ${w.is_active ? 'checked' : ''}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div class="webinar-meta">
+          <span><i data-lucide="list-checks"></i> ${w.soalCount} soal</span>
+          <span><i data-lucide="${w.is_active ? 'eye' : 'eye-off'}"></i> ${w.is_active ? 'Aktif di LMS' : 'Nonaktif'}</span>
+        </div>
+        <div class="webinar-card-actions">
+          <button type="button" class="btn btn-outline btn-sm" data-open-webinar="${w.id}" style="width:100%"><i data-lucide="pencil"></i> Kelola Soal &amp; Link</button>
+        </div>
+      </div>
+    `).join('');
+    lucide.createIcons();
+  }
+
+  document.getElementById('webinarGrid').addEventListener('change', async (e) => {
+    const toggle = e.target.closest('[data-toggle-webinar]');
+    if (!toggle) return;
+    const id = toggle.dataset.toggleWebinar;
+    const newVal = toggle.checked;
+    toggle.disabled = true;
+    const { error } = await supabaseClient.from('webinars')
+      .update({ is_active: newVal, updated_at: new Date().toISOString() }).eq('id', id);
+    toggle.disabled = false;
+    if (error) { alert('Gagal mengubah status: ' + error.message); toggle.checked = !newVal; return; }
+    const w = webinarList.find(x => x.id === id);
+    if (w) w.is_active = newVal;
+    renderWebinarCards();
+  });
+
+  document.getElementById('webinarGrid').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-open-webinar]');
+    if (!btn) return;
+    openWebinarModal(btn.dataset.openWebinar);
+  });
+
+  async function openWebinarModal(webinarId) {
+    const w = webinarList.find(x => x.id === webinarId);
+    if (!w) return;
+    currentEditingWebinar = w;
+
+    document.getElementById('webinarModalTitle').textContent = w.judul || `Webinar ${w.nomor}`;
+    document.getElementById('webinarJudulInput').value = w.judul || '';
+    document.getElementById('webinarYoutubeInput').value = w.youtube_url || '';
+    const msg = document.getElementById('webinarModalMsg');
+    msg.textContent = ''; msg.className = 'form-msg';
+
+    const { data, error } = await supabaseClient.from('webinar_soal').select('*').eq('webinar_id', webinarId).order('urutan');
+    if (error) { alert('Gagal memuat soal: ' + error.message); return; }
+
+    currentSoalState = (data || []).map(s => ({
+      id: s.id,
+      pertanyaan: s.pertanyaan || '',
+      pilihan: (Array.isArray(s.pilihan) && s.pilihan.length >= 2) ? s.pilihan : [{ label: 'A', text: '' }, { label: 'B', text: '' }],
+      jawaban_benar: s.jawaban_benar || 'A',
+      umpan_balik: s.umpan_balik || ''
+    }));
+
+    renderSoalList();
+    document.getElementById('webinarModalBackdrop').classList.add('show');
+  }
+
+  function closeWebinarModal() {
+    document.getElementById('webinarModalBackdrop').classList.remove('show');
+    currentEditingWebinar = null;
+    currentSoalState = [];
+  }
+
+  document.getElementById('btnCloseWebinarModal').addEventListener('click', closeWebinarModal);
+  document.getElementById('btnCancelWebinarModal').addEventListener('click', closeWebinarModal);
+  document.getElementById('webinarModalBackdrop').addEventListener('click', (e) => {
+    if (e.target.id === 'webinarModalBackdrop') closeWebinarModal();
+  });
+
+  function renderSoalList() {
+    const container = document.getElementById('soalListContainer');
+    const emptyMsg = document.getElementById('emptySoalMsg');
+
+    if (currentSoalState.length === 0) {
+      container.innerHTML = '';
+      emptyMsg.style.display = 'block';
+      return;
+    }
+    emptyMsg.style.display = 'none';
+
+    container.innerHTML = currentSoalState.map((soal, sIdx) => `
+      <div class="soal-card">
+        <div class="soal-card-head">
+          <span class="soal-number">Soal ${sIdx + 1}</span>
+          <button type="button" class="btn-icon-danger" data-remove-soal="${sIdx}" title="Hapus soal"><i data-lucide="trash-2"></i></button>
+        </div>
+        <div class="form-field full">
+          <label>Pertanyaan</label>
+          <textarea rows="2" data-soal-field="pertanyaan" data-soal-idx="${sIdx}" placeholder="Tulis pertanyaan...">${escapeHtml(soal.pertanyaan)}</textarea>
+        </div>
+        <div class="pilihan-list">
+          ${soal.pilihan.map((p, pIdx) => `
+            <div class="pilihan-row">
+              <input type="radio" name="benar-${sIdx}" data-pilihan-correct data-soal-idx="${sIdx}" data-pilihan-idx="${pIdx}" ${soal.jawaban_benar === p.label ? 'checked' : ''}>
+              <span class="pilihan-label">${p.label}</span>
+              <input type="text" class="pilihan-text-input" data-pilihan-text data-soal-idx="${sIdx}" data-pilihan-idx="${pIdx}" value="${escapeAttr(p.text)}" placeholder="Teks opsi ${p.label}">
+              ${soal.pilihan.length > 2 ? `<button type="button" class="btn-icon-muted" data-remove-pilihan="${sIdx}:${pIdx}" title="Hapus opsi"><i data-lucide="x"></i></button>` : ''}
+            </div>
+          `).join('')}
+        </div>
+        ${soal.pilihan.length < 5 ? `<button type="button" class="btn btn-outline btn-sm" data-add-pilihan="${sIdx}"><i data-lucide="plus"></i> Tambah Opsi</button>` : ''}
+        <div class="form-field full" style="margin-top:12px">
+          <label>Umpan Balik / Penjelasan</label>
+          <textarea rows="2" data-soal-field="umpan_balik" data-soal-idx="${sIdx}" placeholder="Penjelasan yang muncul saat peserta review jawaban...">${escapeHtml(soal.umpan_balik)}</textarea>
+        </div>
+      </div>
+    `).join('');
+    lucide.createIcons();
+  }
+
+  document.getElementById('btnTambahSoal').addEventListener('click', () => {
+    currentSoalState.push({
+      id: null,
+      pertanyaan: '',
+      pilihan: [{ label: 'A', text: '' }, { label: 'B', text: '' }, { label: 'C', text: '' }, { label: 'D', text: '' }],
+      jawaban_benar: 'A',
+      umpan_balik: ''
+    });
+    renderSoalList();
+  });
+
+  const soalListContainer = document.getElementById('soalListContainer');
+
+  soalListContainer.addEventListener('click', (e) => {
+    const removeSoalBtn = e.target.closest('[data-remove-soal]');
+    if (removeSoalBtn) {
+      const idx = parseInt(removeSoalBtn.dataset.removeSoal, 10);
+      if (confirm('Hapus soal ini?')) { currentSoalState.splice(idx, 1); renderSoalList(); }
+      return;
+    }
+    const addPilihanBtn = e.target.closest('[data-add-pilihan]');
+    if (addPilihanBtn) {
+      const sIdx = parseInt(addPilihanBtn.dataset.addPilihan, 10);
+      const soal = currentSoalState[sIdx];
+      if (soal.pilihan.length < 5) { soal.pilihan.push({ label: labelFor(soal.pilihan.length), text: '' }); renderSoalList(); }
+      return;
+    }
+    const removePilihanBtn = e.target.closest('[data-remove-pilihan]');
+    if (removePilihanBtn) {
+      const [sIdx, pIdx] = removePilihanBtn.dataset.removePilihan.split(':').map(Number);
+      const soal = currentSoalState[sIdx];
+      if (soal.pilihan.length > 2) {
+        const removedLabel = soal.pilihan[pIdx].label;
+        soal.pilihan.splice(pIdx, 1);
+        soal.pilihan.forEach((p, i) => { p.label = labelFor(i); }); // relabel A, B, C, ...
+        if (soal.jawaban_benar === removedLabel) soal.jawaban_benar = soal.pilihan[0].label;
+        renderSoalList();
+      }
+      return;
+    }
+  });
+
+  soalListContainer.addEventListener('input', (e) => {
+    const field = e.target.closest('[data-soal-field]');
+    if (field) {
+      currentSoalState[parseInt(field.dataset.soalIdx, 10)][field.dataset.soalField] = field.value;
+      return;
+    }
+    const pilihanText = e.target.closest('[data-pilihan-text]');
+    if (pilihanText) {
+      const sIdx = parseInt(pilihanText.dataset.soalIdx, 10);
+      const pIdx = parseInt(pilihanText.dataset.pilihanIdx, 10);
+      currentSoalState[sIdx].pilihan[pIdx].text = pilihanText.value;
+    }
+  });
+
+  soalListContainer.addEventListener('change', (e) => {
+    const correctRadio = e.target.closest('[data-pilihan-correct]');
+    if (!correctRadio) return;
+    const sIdx = parseInt(correctRadio.dataset.soalIdx, 10);
+    const pIdx = parseInt(correctRadio.dataset.pilihanIdx, 10);
+    currentSoalState[sIdx].jawaban_benar = currentSoalState[sIdx].pilihan[pIdx].label;
+  });
+
+  document.getElementById('btnSaveWebinarModal').addEventListener('click', async () => {
+    const msg = document.getElementById('webinarModalMsg');
+    msg.textContent = ''; msg.className = 'form-msg';
+
+    const judul = document.getElementById('webinarJudulInput').value.trim();
+    const youtubeUrl = document.getElementById('webinarYoutubeInput').value.trim();
+
+    for (let i = 0; i < currentSoalState.length; i++) {
+      const soal = currentSoalState[i];
+      if (!soal.pertanyaan.trim()) { msg.textContent = `Soal ${i + 1}: pertanyaan belum diisi.`; msg.classList.add('error'); return; }
+      if (soal.pilihan.some(p => !p.text.trim())) { msg.textContent = `Soal ${i + 1}: masih ada opsi jawaban yang kosong.`; msg.classList.add('error'); return; }
+      if (!soal.jawaban_benar) { msg.textContent = `Soal ${i + 1}: belum ditandai jawaban yang benar.`; msg.classList.add('error'); return; }
+    }
+
+    const btn = document.getElementById('btnSaveWebinarModal');
+    btn.disabled = true;
+
+    try {
+      const { error: webinarError } = await supabaseClient.from('webinars')
+        .update({ judul, youtube_url: youtubeUrl || null, updated_at: new Date().toISOString() })
+        .eq('id', currentEditingWebinar.id);
+      if (webinarError) throw webinarError;
+
+      // Ganti seluruh soal webinar ini: hapus yang lama, insert ulang sesuai urutan saat ini.
+      // Catatan: kalau webinar ini sudah pernah dikerjakan peserta, riwayat jawaban detail
+      // (peserta_pretest_jawaban) untuk soal lama ikut terhapus lewat ON DELETE CASCADE.
+      const { error: deleteError } = await supabaseClient.from('webinar_soal').delete().eq('webinar_id', currentEditingWebinar.id);
+      if (deleteError) throw deleteError;
+
+      if (currentSoalState.length > 0) {
+        const rows = currentSoalState.map((soal, idx) => ({
+          webinar_id: currentEditingWebinar.id,
+          urutan: idx,
+          pertanyaan: soal.pertanyaan.trim(),
+          pilihan: soal.pilihan.map(p => ({ label: p.label, text: p.text.trim() })),
+          jawaban_benar: soal.jawaban_benar,
+          umpan_balik: soal.umpan_balik.trim()
+        }));
+        const { error: insertError } = await supabaseClient.from('webinar_soal').insert(rows);
+        if (insertError) throw insertError;
+      }
+
+      closeWebinarModal();
+      await loadWebinars();
+    } catch (err) {
+      msg.textContent = 'Gagal menyimpan: ' + err.message;
       msg.classList.add('error');
     } finally {
       btn.disabled = false;
