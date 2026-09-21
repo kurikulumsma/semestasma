@@ -145,6 +145,12 @@
 
   .empty-row td{text-align:center;color:var(--muted);padding:34px 16px}
 
+  /* TABEL PESERTA: putih, supaya batas kotaknya jelas di atas background halaman */
+  #view-peserta .table-wrap{background:#fff;border-color:#cfd9ec}
+  #view-peserta th{background:#fff;border-bottom:1.5px solid #cfd9ec}
+  #view-peserta td{background:#fff}
+  #view-peserta tbody tr:hover td{background:#f8faff}
+
   /* PESERTA TOOLBAR (search + 2 filter) */
   .peserta-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
   .peserta-toolbar .search-box{flex:1 1 220px;max-width:none}
@@ -162,12 +168,12 @@
   .btn-outline:disabled:hover{border-color:var(--line);color:var(--navy-deep)}
 
   /* VERTICAL BAR CHART */
-  .vbar-chart{display:flex;align-items:flex-end;gap:16px;overflow-x:auto;padding:6px 4px 4px}
-  .vbar-item{display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:52px}
-  .vbar-item .vbar-count{font-size:11.5px;font-weight:700;color:var(--navy-deep);margin-bottom:4px}
+  .vbar-chart{display:flex;align-items:flex-start;gap:14px;overflow-x:auto;padding:6px 4px 8px}
+  .vbar-item{display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:76px}
+  .vbar-item .vbar-count{font-size:12px;font-weight:700;color:var(--navy-deep);margin-bottom:6px}
   .vbar-item .vbar-track{width:100%;height:170px;display:flex;align-items:flex-end;background:var(--paper);border-radius:8px}
   .vbar-item .vbar-fill{width:100%;background:linear-gradient(180deg,var(--cyan),var(--blue));border-radius:8px 8px 0 0;min-height:4px}
-  .vbar-item .vbar-label{font-size:10px;color:var(--muted);margin-top:8px;text-align:center;line-height:1.25;word-break:break-word}
+  .vbar-item .vbar-label{font-size:10.5px;color:var(--muted);margin-top:8px;text-align:center;line-height:1.3;word-break:normal;overflow-wrap:break-word;hyphens:none}
 
   .badge-dev{margin-left:auto;font-size:9.5px;font-weight:700;letter-spacing:.02em;color:#bcd4ff;background:rgba(255,255,255,.12);padding:3px 8px;border-radius:100px;flex-shrink:0}
 
@@ -541,6 +547,28 @@
   </div>
 </div>
 
+<!-- ===== MODAL KONFIRMASI PASSWORD (hapus peserta / admin) ===== -->
+<div class="modal-backdrop" id="confirmDeleteModalBackdrop">
+  <div class="modal-box" style="max-width:400px">
+    <div class="modal-header">
+      <h2 id="confirmDeleteTitle">Hapus</h2>
+      <button type="button" class="modal-close" id="btnCloseConfirmDelete"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <p id="confirmDeleteText" style="font-size:13.5px;color:var(--muted);margin-bottom:16px;line-height:1.6"></p>
+      <div class="form-field full">
+        <label for="confirmDeletePassword">Masukkan password akun Anda</label>
+        <input type="password" id="confirmDeletePassword" placeholder="Password" autocomplete="current-password">
+      </div>
+      <p class="form-msg" id="confirmDeleteMsg"></p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline btn-sm" id="btnCancelConfirmDelete">Batal</button>
+      <button type="button" class="btn btn-danger btn-sm" id="btnConfirmDelete"><i data-lucide="trash-2"></i> Hapus</button>
+    </div>
+  </div>
+</div>
+
 <script>
   lucide.createIcons();
 
@@ -787,23 +815,81 @@
     lucide.createIcons();
   }
 
-  document.getElementById('tablePesertaBody').addEventListener('click', async (e) => {
-    const btn = e.target.closest('[data-delete-peserta]');
-    if (!btn) return;
-    const id = btn.dataset.deletePeserta;
-    const nama = btn.dataset.nama;
-    const ok = confirm(`Hapus biodata "${nama}" dari daftar peserta?\n\nAkun login peserta ini TIDAK terhapus, hanya biodatanya. Tindakan ini tidak bisa dibatalkan.`);
-    if (!ok) return;
+  // ---------- MODAL KONFIRMASI PASSWORD: HAPUS (dipakai peserta & admin) ----------
+  let pendingDelete = null; // { action: async () => error | null }
 
+  function openConfirmDelete(opts) {
+    pendingDelete = opts;
+    document.getElementById('confirmDeleteTitle').textContent = opts.title;
+    document.getElementById('confirmDeleteText').textContent = opts.text;
+    document.getElementById('confirmDeletePassword').value = '';
+    const msg = document.getElementById('confirmDeleteMsg');
+    msg.textContent = ''; msg.className = 'form-msg';
+    document.getElementById('confirmDeleteModalBackdrop').classList.add('show');
+    setTimeout(() => document.getElementById('confirmDeletePassword').focus(), 50);
+  }
+
+  function closeConfirmDelete() {
+    pendingDelete = null;
+    document.getElementById('confirmDeletePassword').value = '';
+    document.getElementById('confirmDeleteModalBackdrop').classList.remove('show');
+  }
+
+  document.getElementById('btnCloseConfirmDelete').addEventListener('click', closeConfirmDelete);
+  document.getElementById('btnCancelConfirmDelete').addEventListener('click', closeConfirmDelete);
+  document.getElementById('confirmDeleteModalBackdrop').addEventListener('click', (e) => {
+    if (e.target.id === 'confirmDeleteModalBackdrop') closeConfirmDelete();
+  });
+  document.getElementById('confirmDeletePassword').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('btnConfirmDelete').click();
+  });
+
+  document.getElementById('btnConfirmDelete').addEventListener('click', async () => {
+    const job = pendingDelete;
+    if (!job) return;
+    const password = document.getElementById('confirmDeletePassword').value;
+    const msg = document.getElementById('confirmDeleteMsg');
+    msg.textContent = ''; msg.className = 'form-msg';
+    if (!password) { msg.textContent = 'Password wajib diisi.'; msg.classList.add('error'); return; }
+
+    const btn = document.getElementById('btnConfirmDelete');
     btn.disabled = true;
-    const { error } = await supabaseClient.from('profiles').delete().eq('id', id);
-    if (error) {
-      alert('Gagal menghapus: ' + error.message);
+
+    // Verifikasi password lewat klien terpisah, biar sesi admin tidak tertimpa.
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const { error: authError } = await supabaseCreateClient.auth.signInWithPassword({ email: session.user.email, password });
+    if (authError) {
+      msg.textContent = 'Password salah.';
+      msg.classList.add('error');
       btn.disabled = false;
       return;
     }
 
+    const error = await job.action();
+    btn.disabled = false;
+    if (error) {
+      msg.textContent = 'Gagal menghapus: ' + error.message;
+      msg.classList.add('error');
+      return;
+    }
+
+    closeConfirmDelete();
     await loadData();
+  });
+
+  document.getElementById('tablePesertaBody').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-delete-peserta]');
+    if (!btn) return;
+    const id = btn.dataset.deletePeserta;
+    const nama = btn.dataset.nama;
+    openConfirmDelete({
+      title: 'Hapus Peserta',
+      text: `Hapus peserta "${nama}"? Biodata dan akun login peserta ini akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.`,
+      action: async () => {
+        const { error } = await supabaseClient.rpc('admin_delete_peserta', { p_id: id });
+        return error;
+      }
+    });
   });
 
   // ---------- DOWNLOAD EXCEL (mengikuti pencarian & filter yang aktif) ----------
@@ -852,17 +938,19 @@
     lucide.createIcons();
   }
 
-  document.getElementById('tableAdminBody').addEventListener('click', async (e) => {
+  document.getElementById('tableAdminBody').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-delete-admin]');
     if (!btn) return;
     const id = btn.dataset.deleteAdmin;
     const nama = btn.dataset.nama;
-    const ok = confirm(`Hapus akses admin untuk "${nama}"?\n\nAkun login orang ini TIDAK ikut terhapus dari sistem — hanya akses adminnya yang dicabut (biodata & role dihapus). Tindakan ini tidak bisa dibatalkan.`);
-    if (!ok) return;
-    btn.disabled = true;
-    const { error } = await supabaseClient.rpc('admin_delete_admin', { p_id: id });
-    if (error) { alert('Gagal menghapus admin: ' + error.message); btn.disabled = false; return; }
-    await loadData();
+    openConfirmDelete({
+      title: 'Hapus Admin',
+      text: `Hapus akses admin untuk "${nama}"? Tindakan ini tidak bisa dibatalkan.`,
+      action: async () => {
+        const { error } = await supabaseClient.rpc('admin_delete_admin', { p_id: id });
+        return error;
+      }
+    });
   });
 
   // ---------- TAMBAH ADMIN BARU ----------
