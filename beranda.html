@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beranda — LMS SEMESTA 2026</title>
+<meta name="description" content="LMS Program SEMESTA 2026, Direktorat Sekolah Menengah Atas, Kementerian Pendidikan Dasar dan Menengah Republik Indonesia.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<div class="app-shell">
+  <div id="sidebarSlot"></div>
+
+  <div class="main">
+    <div id="topbarSlot"></div>
+
+    <div class="content-inner">
+      <p class="error-box" id="pageError"><i data-lucide="alert-circle"></i> <span id="pageErrorMsg"></span></p>
+
+      <div id="berandaRoot">
+        <div class="card"><div class="empty-state"><p>Memuat beranda...</p></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="auth.js"></script>
+<script src="ui-sidebar.js"></script>
+<script>
+  // ---------- Data spesifik halaman Beranda ----------
+  let webinarCache = null; // { webinars, best } — ringkas, cuma buat hitung syarat & judul webinar
+  let karyaCache = [];     // tiap item: baris karya + .akhir (baris karya_akhir atau null)
+
+  async function loadWebinarRingkasan(userId) {
+    const [webinarsRes, attemptsRes] = await Promise.all([
+      supabaseClient.from('webinars').select('*').order('nomor'),
+      supabaseClient.from('peserta_pretest').select('webinar_id, skor, total_soal').eq('peserta_id', userId)
+    ]);
+    if (webinarsRes.error) { showPageError('Gagal memuat data webinar: ' + webinarsRes.error.message); return; }
+    const bestByWebinar = {};
+    (attemptsRes.data || []).forEach(a => {
+      const cur = bestByWebinar[a.webinar_id];
+      if (!cur || a.skor > cur.skor) bestByWebinar[a.webinar_id] = a;
+    });
+    webinarCache = { webinars: webinarsRes.data || [], best: bestByWebinar };
+  }
+
+  async function loadKaryaRingkasan(userId) {
+    const { data: karyaRows, error } = await supabaseClient.from('karya').select('*').eq('peserta_id', userId).order('created_at');
+    if (error) { showPageError('Gagal memuat data karya: ' + error.message); return; }
+    const karyaIds = (karyaRows || []).map(k => k.id);
+    const akhirByKarya = {};
+    if (karyaIds.length) {
+      const { data: akhirRows } = await supabaseClient.from('karya_akhir').select('*').in('karya_id', karyaIds);
+      (akhirRows || []).forEach(a => { akhirByKarya[a.karya_id] = a; });
+    }
+    karyaCache = (karyaRows || []).map(k => ({ ...k, akhir: akhirByKarya[k.id] || null }));
+  }
+
+  function webinarByNomor(n) { return webinarCache ? (webinarCache.webinars.find(w => w.nomor === n) || null) : null; }
+  function webinarTitle(n) { const w = webinarByNomor(n); return (w && w.judul) || WEBINAR_FALLBACK[n].judul; }
+
+  // Nama panel lama (dari versi single-file) -> file/tab tujuan sekarang
+  function panelHref(name) {
+    const map = { beranda: 'beranda.html', webinar: 'webinar.html', challenger: 'pejuang.html', kreator: 'kreator.html', sertifikat: 'sertifikat.html', biodata: 'biodata.html' };
+    const m = /^webinar-(.+)$/.exec(name);
+    if (m) return 'webinar.html#' + m[1];
+    return map[name] || 'beranda.html';
+  }
+
+  // ---------- Syarat SEMESTA Pejuang (dihitung dari data tes) ----------
+  function computeSyarat() {
+    const w1 = webinarByNomor(1), w2 = webinarByNomor(2), w3 = webinarByNomor(3);
+    const preBest = (w1 && webinarCache) ? webinarCache.best[w1.id] : null;
+    const postBestAttempt = (w3 && webinarCache) ? webinarCache.best[w3.id] : null;
+    const webinars = [w1, w2, w3];
+    const belumAktif = webinars.find(w => !w || !w.is_active);
+    return {
+      preDone: !!preBest, preBest: preBest || null,
+      postDone: !!postBestAttempt, postBest: postBestAttempt || null,
+      aktifSemua: !belumAktif, belumAktifNomor: belumAktif ? webinars.indexOf(belumAktif) + 1 : null,
+      ok: !!preBest && !!postBestAttempt && !belumAktif
+    };
+  }
+
+  function getNextStep() {
+    const t = todayStr(), lvl = getLevel(), sy = computeSyarat(), karya = karyaCache;
+
+    if (lvl === 'inspirator') {
+      return { tone:'success', icon:'award', title:'Kamu adalah Inspirator SEMESTA',
+        desc:'Bagikan praktik baikmu di Apresiasi SEMESTA pada ' + fmtTgl(TGL.apresiasi) + '.' };
+    }
+    if (lvl === 'kreator') {
+      if (getHasil(3) === 'tidak') {
+        return { tone:'info', icon:'heart-handshake', title:'Terima kasih atas karyamu',
+          desc:'Karyamu belum terpilih pada Kurasi Tahap 2. Rincian ada di kotak Kreator di bawah.' };
+      }
+      if (karya.some(k => k.akhir)) {
+        return { tone:'info', icon:'hourglass', title:'Karya akhir sudah terkirim',
+          desc:'Kurasi Tahap 2 berlangsung ' + fmtRange(TGL.kurasi2Mulai, TGL.kurasi2Selesai) + '. Karya terpilih diumumkan ' + fmtTgl(TGL.pengumumanTerpilih) + '.' };
+      }
+      if (t > TGL.batasFinal) {
+        return { tone:'warn', icon:'alert-triangle', title:'Batas pengumpulan karya akhir sudah lewat',
+          desc:'Batasnya ' + fmtTgl(TGL.batasFinal) + '. Hubungi panitia jika ada kendala.' };
+      }
+      return { tone:'action', icon:'upload', title:'Sempurnakan dan unggah karya akhir',
+        desc:'Batas pengumpulan ' + fmtTgl(TGL.batasFinal) + '. Ikuti Klinik SEMESTA pada ' + fmtTgl(TGL.klinik) + ' untuk mendapat pendampingan.',
+        cta:{ label:'Buka menu Kreator', panel:'kreator' } };
+    }
+    if (lvl === 'challenger') {
+      if (getHasil(2) === 'tidak') {
+        return { tone:'info', icon:'heart-handshake', title:'Terima kasih atas karyamu',
+          desc:'Karyamu belum lolos Kurasi Tahap 1. Rincian ada di kotak Pejuang di bawah.' };
+      }
+      if (t < TGL.tantangan) {
+        return { tone:'info', icon:'calendar-clock', title:'Kamu SEMESTA Pejuang',
+          desc:'Tantangan SEMESTA dibuka ' + fmtTgl(TGL.tantangan) + '. Mulai pikirkan isu di sekitar sekolahmu.' };
+      }
+      if (!karya.some(k => k.draft_uploaded_at)) {
+        if (t > TGL.batasDraft) {
+          return { tone:'warn', icon:'alert-triangle', title:'Batas pengumpulan karya awal sudah lewat',
+            desc:'Batasnya ' + fmtTgl(TGL.batasDraft) + '. Hubungi panitia jika ada kendala.' };
+        }
+        return { tone:'action', icon:'upload', title:'Unggah draft modul ajar',
+          desc:'Batas pengumpulan karya awal ' + fmtTgl(TGL.batasDraft) + '.',
+          cta:{ label:'Buka menu Pejuang', panel:'challenger' } };
+      }
+      return { tone:'info', icon:'hourglass', title:'Draft modul ajar sudah terkirim',
+        desc:'Kurasi Tahap 1 berlangsung ' + fmtRange(TGL.kurasi1Mulai, TGL.kurasi1Selesai) + '. Hasilnya diumumkan ' + fmtTgl(TGL.pengumumanKurasi1) + '.' };
+    }
+
+    // Penjelajah
+    if (getHasil(1) === 'tidak') {
+      return { tone:'info', icon:'heart-handshake', title:'Terima kasih telah berpartisipasi',
+        desc:'Kamu belum dapat melanjutkan ke tahap Pejuang. Materi webinar tetap bisa kamu akses.',
+        cta:{ label:'Buka menu Webinar', panel:'webinar' } };
+    }
+    if (t >= TGL.pengumumanChallenger) {
+      if (sy.ok) {
+        return { tone:'info', icon:'hourglass', title:'Menunggu penetapan Pejuang',
+          desc:'Pretest, Webinar 1–3, dan posttest sudah kamu selesaikan. Penetapan dilakukan oleh panitia.' };
+      }
+      return { tone:'warn', icon:'info', title:'Syarat SEMESTA Pejuang belum lengkap',
+        desc:'Selesaikan pretest, ikuti Webinar 1–3, dan kerjakan posttest. Kamu tetap bisa mengakses materi webinar.' };
+    }
+    if (!sy.preDone) {
+      return { tone:'action', icon:'pencil-line', title:'Kerjakan Pretest',
+        desc:'Pretest dikerjakan sebelum mengikuti rangkaian Webinar 1–3.', cta:{ label:'Buka Pretest', panel:'webinar-pre' } };
+    }
+    if (!sy.aktifSemua) {
+      return { tone:'info', icon:'calendar-clock', title:'Webinar ' + sy.belumAktifNomor + ' belum dibuka',
+        desc:'Tab webinar akan aktif begitu jadwalnya tiba.' };
+    }
+    if (!sy.postDone) {
+      return { tone:'action', icon:'video', title:'Kerjakan Posttest',
+        desc:'Posttest dikerjakan setelah Webinar 1, 2, dan 3 selesai kamu ikuti.', cta:{ label:'Buka Posttest', panel:'webinar-post' } };
+    }
+    if (sy.ok) {
+      return { tone:'success', icon:'check-circle', title:'Syarat SEMESTA Pejuang sudah lengkap',
+        desc:'Pengumuman peserta Pejuang pada ' + fmtTgl(TGL.pengumumanChallenger) + '.' };
+    }
+    return { tone:'info', icon:'compass', title:'Selamat datang di SEMESTA 2026', desc:'Ikuti seri webinar untuk menjadi SEMESTA Pejuang.' };
+  }
+
+  // Tanggal pengumuman yang tampil di kartu tahap yang masih terkunci
+  const FASE_ANNOUNCE = [null, TGL.pengumumanChallenger, TGL.pengumumanKurasi1, TGL.pengumumanTerpilih];
+  // Menu tujuan saat kartu tahap diklik
+  const FASE_PANEL = ['webinar', 'challenger', 'kreator', null];
+
+  function faseBoxHtml(i) {
+    const f = FASE[i], idx = levelIdx();
+    if (i > idx) {
+      const tgl = FASE_ANNOUNCE[i];
+      return `
+        <div class="fase-box locked">
+          <div class="fase-top"><span class="fase-ic"><i data-lucide="lock"></i></span></div>
+          <div class="fase-name">${f.nama}</div>
+          <div class="fase-desc">${f.desc}</div>
+          ${tgl ? `<span class="fase-date"><i data-lucide="calendar"></i> Diumumkan ${fmtTgl(tgl)}</span>` : ''}
+        </div>`;
+    }
+    const state = i < idx ? 'done' : 'current';
+    const target = FASE_PANEL[i];
+    const boxOpen = target ? `<a class="fase-box ${state}" href="${panelHref(target)}">` : `<div class="fase-box ${state}">`;
+    const boxClose = target ? '</a>' : '</div>';
+    return `
+      ${boxOpen}
+        <div class="fase-top">
+          <span class="fase-ic"><i data-lucide="${state === 'done' ? 'check' : f.icon}"></i></span>
+          ${target ? `<i data-lucide="chevron-right" class="fase-chevron"></i>` : ''}
+        </div>
+        <div class="fase-name">${f.nama}</div>
+        <div class="fase-desc">${f.desc}</div>
+        ${state === 'current' ? `<span class="fase-cur"><i data-lucide="chevron-right"></i> Level kamu saat ini</span>` : ''}
+      ${boxClose}`;
+  }
+
+  function faseStatusHtml(i) {
+    const f = FASE[i], idx = levelIdx();
+    if (i > idx) return `<div class="fase-status is-empty"></div>`;
+    const hasil = i === 3 ? 'lolos' : (getHasil(i + 1) || 'menunggu');
+    const label = { lolos:'Lolos', tidak:'Tidak lolos', menunggu:'Menunggu hasil' }[hasil];
+    const icon = { lolos:'check-circle', tidak:'heart-handshake', menunggu:'clock' }[hasil];
+    const teks = f.hasil[hasil].replace('{tgl}', fmtTgl(f.tgl));
+    return `
+      <div class="fase-status ${hasil}">
+        <div class="fh-head"><i data-lucide="${icon}"></i> ${i === 3 ? 'Selamat' : label}</div>
+        <p>${escapeHtml(teks)}</p>
+      </div>`;
+  }
+
+  function renderBeranda() {
+    const root = document.getElementById('berandaRoot');
+    if (!root) return;
+    const t = todayStr();
+    const nama = (profileCache && profileCache.nama) ? profileCache.nama : '';
+    const lvl = FASE[levelIdx()];
+    const next = getNextStep();
+    const sy = computeSyarat();
+
+    const rows = [
+      { label: 'Pretest', tab: 'pre' },
+      { label: webinarTitle(1), tab: '1' },
+      { label: webinarTitle(2), tab: '2' },
+      { label: webinarTitle(3), tab: '3' },
+      { label: 'Posttest', tab: 'post' }
+    ].map((it, i) => {
+      let sub, chip;
+      if (it.tab === 'pre') {
+        sub = sy.preBest ? 'Skor ' + sy.preBest.skor + '/' + sy.preBest.total_soal : 'Dikerjakan sebelum Webinar 1';
+        chip = sy.preDone ? `<span class="chip ok"><i data-lucide="check"></i> Selesai</span>` : `<span class="chip"><i data-lucide="minus"></i> Belum</span>`;
+      } else if (it.tab === 'post') {
+        sub = sy.postBest ? 'Skor ' + sy.postBest.skor + '/' + sy.postBest.total_soal : 'Dikerjakan setelah Webinar 3';
+        chip = sy.postDone ? `<span class="chip ok"><i data-lucide="check"></i> Selesai</span>` : `<span class="chip"><i data-lucide="minus"></i> Belum</span>`;
+      } else {
+        const w = webinarByNomor(Number(it.tab));
+        const aktif = !!(w && w.is_active);
+        sub = fmtTgl(WEBINAR_FALLBACK[it.tab].tgl);
+        chip = aktif ? `<span class="chip ok"><i data-lucide="check"></i> Sudah dibuka</span>` : `<span class="chip"><i data-lucide="lock"></i> Belum dibuka</span>`;
+      }
+      return `
+        <a class="prog-row" href="${panelHref('webinar-' + it.tab)}">
+          <span class="prog-no">${i + 1}</span>
+          <span class="prog-main">
+            <span class="prog-title" style="display:block">${escapeHtml(it.label)}</span>
+            <span class="prog-date" style="display:block">${sub}</span>
+          </span>
+          <span class="chips">${chip}</span>
+        </a>`;
+    }).join('');
+
+    const jadwalNext = JADWAL.findIndex(j => j.start > t);
+    const timeline = JADWAL.map((j, i) => {
+      let cls = 'past';
+      if (j.end >= t) cls = (j.start <= t) ? 'now' : (i === jadwalNext ? 'next' : '');
+      return `
+        <div class="tl-item ${cls}">
+          <span class="tl-dot"></span>
+          <div><div class="tl-label">${escapeHtml(j.label)}</div><div class="tl-date">${fmtRange(j.start, j.end)} ${j.end.slice(0, 4)}</div></div>
+        </div>`;
+    }).join('');
+
+    const idx = levelIdx();
+    let progres;
+    if (idx <= 0) {
+      progres = {
+        icon: 'graduation-cap', title: 'Progres webinar',
+        desc: 'Ikuti webinar, kerjakan pre-test dan post-test untuk naik level.',
+        rows: rows,
+        note: sy.ok
+          ? `Semua tahap sudah selesai. Syarat SEMESTA Pejuang lengkap, tinggal menunggu pengumuman ${fmtTgl(TGL.pengumumanChallenger)}.`
+          : `Syarat SEMESTA Pejuang: Pretest, Webinar 1–3, dan Posttest harus selesai. Pengumuman ${fmtTgl(TGL.pengumumanChallenger)}.`
+      };
+    } else if (idx === 1) {
+      const karya = karyaCache;
+      const karyaRows = [0, 1].map(i => {
+        const k = karya[i];
+        const chips = k
+          ? `<span class="chip ok"><i data-lucide="check"></i> Terkirim</span>`
+          : `<span class="chip"><i data-lucide="minus"></i> Belum diisi</span>`;
+        return `
+          <a class="prog-row" href="${panelHref('challenger')}">
+            <span class="prog-no">${i + 1}</span>
+            <span class="prog-main">
+              <span class="prog-title" style="display:block">${k ? escapeHtml(k.judul) : 'Karya ke-' + (i + 1)}</span>
+              <span class="prog-date" style="display:block">${k ? jenisLabel(k.jenis) : 'Belum dikirim'}</span>
+            </span>
+            <span class="chips">${chips}</span>
+          </a>`;
+      }).join('');
+      progres = {
+        icon: 'swords', title: 'Progres Tantangan Pejuang',
+        desc: `Kirim karya untuk Tantangan SEMESTA, maksimal ${MAKS_KARYA} karya.`,
+        rows: karyaRows,
+        note: `${karya.length} dari ${MAKS_KARYA} karya sudah dikirim. Batas pengumpulan ${fmtTgl(TGL.batasDraft)}.`
+      };
+    } else {
+      const karya = karyaCache;
+      const done = karya.filter(k => k.akhir).length;
+      const rows2 = karya.length
+        ? karya.map((k, i) => {
+            const chips = k.akhir
+              ? `<span class="chip ok"><i data-lucide="check"></i> Karya akhir terkirim</span>`
+              : `<span class="chip"><i data-lucide="minus"></i> Belum diunggah</span>`;
+            return `
+              <a class="prog-row" href="${panelHref('kreator')}">
+                <span class="prog-no">${i + 1}</span>
+                <span class="prog-main">
+                  <span class="prog-title" style="display:block">${escapeHtml(k.judul)}</span>
+                  <span class="prog-date" style="display:block">${jenisLabel(k.jenis)}</span>
+                </span>
+                <span class="chips">${chips}</span>
+              </a>`;
+          }).join('')
+        : `<p class="empty-note">Belum ada karya yang lolos Kurasi Tahap 1.</p>`;
+      progres = {
+        icon: 'pen-tool', title: 'Progres karya akhir',
+        desc: 'Unggah karya akhir untuk mengikuti Kurasi Tahap 2.',
+        rows: rows2,
+        note: karya.length ? `${done} dari ${karya.length} karya sudah diunggah karya akhirnya. Batas pengumpulan ${fmtTgl(TGL.batasFinal)}.` : ''
+      };
+    }
+
+    root.innerHTML = `
+      <div class="card">
+        <div class="home-hero">
+          <div class="hero-greet">
+            <div class="hi">Selamat datang di LMS SEMESTA 2026</div>
+            <h2>${nama ? 'Halo, ' + escapeHtml(nama) : 'Halo'}</h2>
+            <span class="level-badge lv-${lvl.key}"><i data-lucide="${lvl.icon}"></i> ${lvl.nama} SEMESTA</span>
+            <p>Berani Mencoba, Kreatif Mencipta.</p>
+          </div>
+          <div class="next-step tone-${next.tone}">
+            <div class="kicker">Langkah berikutnya</div>
+            <div class="ns-body">
+              <span class="ns-ic"><i data-lucide="${next.icon}"></i></span>
+              <div>
+                <div class="ns-title">${escapeHtml(next.title)}</div>
+                <div class="ns-desc">${escapeHtml(next.desc)}</div>
+              </div>
+            </div>
+            ${next.cta ? `<a class="btn btn-primary btn-sm" href="${panelHref(next.cta.panel)}">${escapeHtml(next.cta.label)}</a>` : ''}
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <span class="ic ic-acc4"><i data-lucide="badge-check"></i></span>
+          <div>Status kepesertaan</div>
+        </div>
+        <div class="fase-grid">${[0, 1, 2, 3].map(faseBoxHtml).join('')}</div>
+        <div class="fase-grid">${[0, 1, 2, 3].map(faseStatusHtml).join('')}</div>
+      </div>
+
+      <div class="home-grid">
+        <div class="card">
+          <div class="section-title">
+            <span class="ic ic-acc4"><i data-lucide="calendar-days"></i></span>
+            <div>Jadwal program</div>
+          </div>
+          <div class="timeline">${timeline}</div>
+        </div>
+        <div class="card">
+          <div class="section-title">
+            <span class="ic ic-acc2"><i data-lucide="${progres.icon}"></i></span>
+            <div>${progres.title}</div>
+          </div>
+          <p style="font-size:12.5px;color:var(--muted);margin:-14px 0 14px">${progres.desc}</p>
+          <div>${progres.rows}</div>
+          ${progres.note ? `<div class="prog-note">${progres.note}</div>` : ''}
+        </div>
+      </div>`;
+    lucide.createIcons();
+  }
+
+  // ---------- Bootstrap halaman ----------
+  (async function () {
+    const boot = await bootstrapPeserta();
+    if (!boot) return;
+    if (boot.error) { showPageError(boot.error); return; }
+
+    renderSidebar('beranda', 'LMS SEMESTA');
+
+    await Promise.all([
+      loadWebinarRingkasan(currentUserId),
+      loadKaryaRingkasan(currentUserId)
+    ]);
+    renderBeranda();
+  })();
+</script>
+</body>
+</html>
