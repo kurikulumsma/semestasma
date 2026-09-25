@@ -27,6 +27,59 @@ const SIDEBAR_MENU = [
   { key: 'sertifikat', href: 'sertifikat.html', icon: 'award',            label: 'Sertifikat', badge: 'Segera' }
 ];
 
+// Sidebar shell — dipanggil di baris PALING AWAL bootstrap tiap halaman, SEBELUM await
+// bootstrapPeserta(), sebagai renderSidebarShell(activeKey, judulTopbar). Ini BUKAN skeleton
+// pulsing kotak-kotak: menu, ikon, dan label dirender ASLI langsung (SIDEBAR_MENU gak butuh
+// auth), jadi gak ada jeda blank putih pas refresh. Yang masih nunggu data peserta —
+// status kunci per-menu (default ditampilkan "Terkunci", aman sampai levelnya kebaca) dan
+// nama di footer (placeholder kecil .skel) — nanti ditimpa total begitu renderSidebar() jalan
+// setelah bootstrapPeserta() selesai.
+function renderSidebarShell(activeKey, judulTopbar) {
+  const sidebarSlot = document.getElementById('sidebarSlot');
+  const topbarSlot = document.getElementById('topbarSlot');
+  if (!sidebarSlot || !topbarSlot) return;
+
+  const menuHtml = SIDEBAR_MENU.map(m => {
+    const locked = m.lockLevel !== undefined;
+    const badge = locked
+      ? '<span class="badge-dev">Terkunci</span>'
+      : (m.badge ? `<span class="badge-dev">${m.badge}</span>` : '');
+    return `
+      <a href="${locked ? 'javascript:void(0)' : m.href}" class="nav-item ${activeKey === m.key ? 'active' : ''} ${locked ? 'locked' : ''}">
+        <i data-lucide="${m.icon}"></i> ${m.label} ${badge}
+      </a>`;
+  }).join('');
+
+  sidebarSlot.innerHTML = `
+    <aside class="sidebar">
+      <a href="index.html#hero" class="sidebar-brand">
+        <img src="${SEMESTA_LOGO_DATA_URI}" alt="SEMESTA 2026">
+      </a>
+      <nav class="sidebar-nav">${menuHtml}</nav>
+      <div class="sidebar-footer">
+        <a href="biodata.html" class="sidebar-user">
+          <div class="avatar"><i data-lucide="user"></i></div>
+          <div class="uname skel" id="sidebarUserName">&nbsp;</div>
+        </a>
+        <button type="button" id="btnLogout" class="btn btn-logout"><i data-lucide="log-out"></i> Keluar</button>
+      </div>
+    </aside>`;
+
+  topbarSlot.innerHTML = `
+    <div class="topbar">
+      <button type="button" class="btn-menu-toggle" id="btnMenuToggle"><i data-lucide="menu"></i></button>
+      <h1>${escapeHtml(judulTopbar || 'LMS SEMESTA')}</h1>
+    </div>`;
+
+  document.getElementById('btnLogout').addEventListener('click', logout);
+  const btnMenuToggle = document.getElementById('btnMenuToggle');
+  const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+  if (btnMenuToggle) btnMenuToggle.addEventListener('click', () => document.body.classList.add('sidebar-open'));
+  if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', () => document.body.classList.remove('sidebar-open'));
+
+  if (window.lucide) lucide.createIcons();
+}
+
 function renderSidebar(activeKey, judulTopbar) {
   const sidebarSlot = document.getElementById('sidebarSlot');
   const topbarSlot = document.getElementById('topbarSlot');
@@ -55,7 +108,7 @@ function renderSidebar(activeKey, judulTopbar) {
       <div class="sidebar-footer">
         <a href="biodata.html" class="sidebar-user">
           <div class="avatar"><i data-lucide="user"></i></div>
-          <div class="uname">${nama ? escapeHtml(nama) : '&nbsp;'}</div>
+          <div class="uname" id="sidebarUserName">${nama ? escapeHtml(nama) : '&nbsp;'}</div>
         </a>
         <button type="button" id="btnLogout" class="btn btn-logout"><i data-lucide="log-out"></i> Keluar</button>
       </div>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Biodata — LMS SEMESTA 2026</title>
+<meta name="description" content="LMS Program SEMESTA 2026, Direktorat Sekolah Menengah Atas, Kementerian Pendidikan Dasar dan Menengah Republik Indonesia.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<div class="app-shell">
+  <div id="sidebarSlot"></div>
+
+  <div class="main">
+    <div id="topbarSlot"></div>
+
+    <div class="content-inner">
+      <p class="error-box" id="pageError"><i data-lucide="alert-circle"></i> <span id="pageErrorMsg"></span></p>
+
+      <div class="card">
+        <div class="section-title" style="justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="ic ic-acc2"><i data-lucide="id-card"></i></span>
+            <div>Biodata Saya</div>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" id="btnEditBiodata"><i data-lucide="pencil"></i> Edit Data</button>
+        </div>
+
+        <div class="bio-grid" id="bioGrid">
+          <div class="bio-item"><div class="label">Nama Lengkap</div><div class="value skel" data-field="nama">&nbsp;</div></div>
+          <div class="bio-item"><div class="label">Email Belajar.id</div><div class="value skel" data-field="email">&nbsp;</div></div>
+          <div class="bio-item"><div class="label">NIK KTP</div><div class="value skel" data-field="nik">&nbsp;</div></div>
+          <div class="bio-item"><div class="label">No. WhatsApp</div><div class="value skel" data-field="whatsapp">&nbsp;</div></div>
+          <div class="bio-item"><div class="label">NPSN Sekolah</div><div class="value skel" data-field="npsn">&nbsp;</div></div>
+          <div class="bio-item"><div class="label">Nama Sekolah</div><div class="value skel" data-field="nama_sekolah">&nbsp;</div></div>
+          <div class="bio-item"><div class="label">Provinsi</div><div class="value skel" data-field="provinsi">&nbsp;</div></div>
+          <div class="bio-item"><div class="label">Kota / Kabupaten</div><div class="value skel" data-field="kabkota">&nbsp;</div></div>
+          <div class="bio-item"><div class="label">Mata Pelajaran</div><div class="value skel" data-field="mapel">&nbsp;</div></div>
+          <div class="bio-item full"><div class="label">Alamat Instansi</div><div class="value skel" data-field="alamat_instansi">&nbsp;</div></div>
+        </div>
+
+        <div id="bioEditForm" style="display:none">
+          <form id="formEditBiodata" class="form-grid">
+            <div class="form-field"><label for="editNama">Nama Lengkap</label><input type="text" id="editNama" required></div>
+            <div class="form-field"><label for="editNik">NIK KTP</label><input type="text" id="editNik"></div>
+            <div class="form-field"><label for="editWhatsapp">No. WhatsApp</label><input type="text" id="editWhatsapp"></div>
+            <div class="form-field"><label for="editNpsn">NPSN Sekolah</label><input type="text" id="editNpsn"></div>
+            <div class="form-field"><label for="editNamaSekolah">Nama Sekolah</label><input type="text" id="editNamaSekolah"></div>
+            <div class="form-field"><label for="editProvinsi">Provinsi</label><input type="text" id="editProvinsi"></div>
+            <div class="form-field"><label for="editKabkota">Kota / Kabupaten</label><input type="text" id="editKabkota"></div>
+            <div class="form-field"><label for="editMapel">Mata Pelajaran</label><input type="text" id="editMapel"></div>
+            <div class="form-field full"><label for="editAlamatInstansi">Alamat Instansi</label><textarea id="editAlamatInstansi" rows="2"></textarea></div>
+            <div class="full" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <button type="submit" class="btn btn-primary btn-sm" id="btnSimpanBiodata"><i data-lucide="save"></i> Simpan Perubahan</button>
+              <button type="button" class="btn btn-outline btn-sm" id="btnBatalEditBiodata">Batal</button>
+              <p class="form-msg" id="editBiodataMsg" style="margin:0"></p>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="auth.js"></script>
+<script src="ui-sidebar.js"></script>
+<script>
+  function fillField(fieldName, value) {
+    const el = document.querySelector('[data-field="' + fieldName + '"]');
+    if (!el) return;
+    el.textContent = value || '-';
+    el.classList.remove('skel');
+  }
+
+  function renderBiodata(profile, email) {
+    fillField('nama', profile.nama);
+    fillField('email', email);
+    fillField('nik', profile.nik);
+    fillField('whatsapp', profile.whatsapp);
+    fillField('npsn', profile.npsn);
+    fillField('nama_sekolah', profile.nama_sekolah);
+    fillField('provinsi', profile.provinsi);
+    fillField('kabkota', profile.kabkota);
+    fillField('mapel', profile.mapel);
+    fillField('alamat_instansi', profile.alamat_instansi);
+  }
+
+  document.getElementById('btnEditBiodata').addEventListener('click', () => {
+    if (!profileCache) return;
+    document.getElementById('editNama').value = profileCache.nama || '';
+    document.getElementById('editNik').value = profileCache.nik || '';
+    document.getElementById('editWhatsapp').value = profileCache.whatsapp || '';
+    document.getElementById('editNpsn').value = profileCache.npsn || '';
+    document.getElementById('editNamaSekolah').value = profileCache.nama_sekolah || '';
+    document.getElementById('editProvinsi').value = profileCache.provinsi || '';
+    document.getElementById('editKabkota').value = profileCache.kabkota || '';
+    document.getElementById('editMapel').value = profileCache.mapel || '';
+    document.getElementById('editAlamatInstansi').value = profileCache.alamat_instansi || '';
+    const msg = document.getElementById('editBiodataMsg');
+    msg.textContent = ''; msg.className = 'form-msg';
+    document.getElementById('bioGrid').style.display = 'none';
+    document.getElementById('bioEditForm').style.display = 'block';
+  });
+
+  document.getElementById('btnBatalEditBiodata').addEventListener('click', () => {
+    document.getElementById('bioEditForm').style.display = 'none';
+    document.getElementById('bioGrid').style.display = 'grid';
+  });
+
+  document.getElementById('formEditBiodata').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('editBiodataMsg');
+    msg.textContent = ''; msg.className = 'form-msg';
+
+    const updates = {
+      nama: document.getElementById('editNama').value.trim(),
+      nik: document.getElementById('editNik').value.trim(),
+      whatsapp: document.getElementById('editWhatsapp').value.trim(),
+      npsn: document.getElementById('editNpsn').value.trim(),
+      nama_sekolah: document.getElementById('editNamaSekolah').value.trim(),
+      provinsi: document.getElementById('editProvinsi').value.trim(),
+      kabkota: document.getElementById('editKabkota').value.trim(),
+      mapel: document.getElementById('editMapel').value.trim(),
+      alamat_instansi: document.getElementById('editAlamatInstansi').value.trim()
+    };
+
+    const btn = document.getElementById('btnSimpanBiodata');
+    btn.disabled = true;
+
+    const { error } = await supabaseClient.from('profiles').update(updates).eq('id', currentUserId);
+
+    btn.disabled = false;
+
+    if (error) {
+      msg.textContent = 'Gagal menyimpan perubahan: ' + error.message;
+      msg.classList.add('error');
+      return;
+    }
+
+    profileCache = { ...profileCache, ...updates };
+    Object.keys(updates).forEach(key => fillField(key, updates[key]));
+
+    const sidebarUserName = document.getElementById('sidebarUserName');
+    if (sidebarUserName) sidebarUserName.textContent = updates.nama;
+
+    document.getElementById('bioEditForm').style.display = 'none';
+    document.getElementById('bioGrid').style.display = 'grid';
+  });
+
+  // ---------- Bootstrap halaman ----------
+  (async function () {
+    renderSidebarShell('biodata', 'Biodata Saya');
+    const boot = await bootstrapPeserta();
+    if (!boot) return;
+    if (boot.error) { showPageError(boot.error); return; }
+
+    renderSidebar('biodata', 'Biodata Saya');
+    renderBiodata(boot.profile, boot.session.user.email);
+  })();
+</script>
+</body>
+</html>

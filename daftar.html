@@ -119,6 +119,10 @@
   .field-notice{display:none;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:#9a6400;background:#fff8e8;border:1px solid #ffe0a3;padding:9px 12px;border-radius:9px;margin-top:8px}
   .field-notice.show{display:flex}
   .field-notice svg{width:14px;height:14px;flex-shrink:0}
+  .npsn-search-wrap{display:flex;gap:10px}
+  .npsn-search-wrap input{flex:1}
+  .btn-cek-npsn{flex-shrink:0;padding:13px 22px}
+  .btn-cek-npsn svg{width:16px;height:16px}
 
   .pw-field{position:relative}
   .pw-toggle{position:absolute;right:6px;top:32px;width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted)}
@@ -232,7 +236,8 @@
               <div class="full">
                 <label for="email">Email<span class="req">*</span></label>
                 <input type="email" name="email_belajar" id="email" required placeholder="contoh@emailanda.com">
-                <p class="field-hint">Gunakan akun belajar.id resmi milik Anda.</p>
+                <p class="field-hint">Gunakan email pribadi Anda.</p>
+                <p class="field-error" id="emailError"><i data-lucide="alert-circle"></i> <span id="emailErrorMsg"></span></p>
               </div>
               <div class="pw-field">
                 <label for="password">Kata Sandi <span class="req">*</span></label>
@@ -293,15 +298,15 @@
             <div class="field-grid">
               <div>
                 <label for="npsn">NPSN Sekolah <span class="req">*</span></label>
-                <input type="text" name="npsn" id="npsn" required placeholder="Contoh: 20123456">
+                <div class="npsn-search-wrap">
+                  <input type="text" inputmode="numeric" name="npsn" id="npsn" required placeholder="Contoh: 20123456" maxlength="8">
+                  <button type="button" id="btnCariNpsn" class="btn btn-primary btn-cek-npsn">Cek</button>
+                </div>
+                <p class="field-error" id="npsnError"><i data-lucide="alert-circle"></i> <span id="npsnErrorMsg"></span></p>
               </div>
               <div>
                 <label for="instansi">Nama Sekolah <span class="req">*</span></label>
                 <input type="text" name="instansi" id="instansi" required placeholder="Nama satuan pendidikan">
-              </div>
-              <div class="full">
-                <label for="alamat">Alamat Instansi <span class="req">*</span></label>
-                <textarea name="alamat_instansi" id="alamat" required placeholder="Tuliskan jalan, kelurahan, kecamatan instansi..."></textarea>
               </div>
               <div class="select-wrap">
                 <label for="provinsi">Provinsi <span class="req">*</span></label>
@@ -317,12 +322,20 @@
                 </select>
                 <div class="chev"><i data-lucide="chevron-down"></i></div>
               </div>
+              <div class="full">
+                <label for="alamat">Alamat Instansi <span class="req">*</span></label>
+                <textarea name="alamat_instansi" id="alamat" required placeholder="Tuliskan jalan, kelurahan, kecamatan instansi..."></textarea>
+              </div>
               <div class="full select-wrap">
                 <label for="mapel">Mata Pelajaran <span class="req">*</span></label>
                 <select name="mapel" id="mapel" required>
                   <option value="">-- Pilih Mata Pelajaran --</option>
                 </select>
                 <div class="chev"><i data-lucide="chevron-down"></i></div>
+              </div>
+              <div class="full" id="mapelLainnyaWrap" style="display:none">
+                <label for="mapelLainnya">Sebutkan Mata Pelajaran <span class="req">*</span></label>
+                <input type="text" name="mapel_lainnya" id="mapelLainnya" placeholder="Tuliskan mata pelajaran Anda">
               </div>
             </div>
 
@@ -351,8 +364,8 @@
         <h2>Terima Kasih, Pendaftaran Anda Berhasil!</h2>
         <p>Akun Anda telah dibuat dan biodata tersimpan. Silakan login menggunakan email &amp; kata sandi Anda di LMS SEMESTA 2026 untuk melanjutkan, dan jangan lupa bergabung ke Channel WhatsApp resmi kami agar tidak tertinggal informasi.</p>
         <div class="modal-actions">
-          <a href="https://sites.google.com/view/semestasma/login" target="_blank" class="btn btn-selesai"><i data-lucide="log-in"></i> Login ke LMS</a>
-          <a href="https://whatsapp.com/channel/0029VbBon2hInlqSwWrBNk35" target="_blank" class="btn btn-wa"><i data-lucide="message-circle"></i> Gabung Channel</a>
+          <a href="login.html" class="btn btn-selesai"><i data-lucide="log-in"></i> Login ke LMS</a>
+          <a href="https://whatsapp.com/channel/0029Vb906wh3LdQVVExcbK28" target="_blank" class="btn btn-wa"><i data-lucide="message-circle"></i> Gabung Channel</a>
         </div>
         <button type="button" id="btnSelesai" class="text-link">Isi formulir baru</button>
       </div>
@@ -383,25 +396,32 @@
 
   // 1. Daftar mata pelajaran (dummy — nanti diganti data dari backend)
   const daftarMapel = [
-    'Antropologi','Bahasa Arab','Bahasa Asing','Bahasa Indonesia','Bahasa Indonesia Tingkat Lanjut',
-    'Bahasa Inggris','Bahasa Inggris Tingkat Lanjut','Bahasa Jepang','Bahasa Jerman','Bahasa Korea',
-    'Bahasa Mandarin','Bahasa Prancis','Biologi','Bimbingan dan Konseling (BK)','Ekonomi',
-    'Energi dan Pertambangan','Fikih','Fisika','Geografi','Ilmu Pengetahuan Alam (IPA)',
-    'Ilmu Pengetahuan Sosial (IPS)','Informatika','Kimia','Koding dan Kecerdasan Artifisial',
-    'Matematika','Matematika Tingkat Lanjut','Muatan Lokal',
-    'Pendidikan Agama Buddha dan Budi Pekerti','Pendidikan Agama Hindu dan Budi Pekerti',
-    'Pendidikan Agama Islam dan Budi Pekerti','Pendidikan Agama Katolik dan Budi Pekerti',
-    'Pendidikan Agama Khonghucu dan Budi Pekerti','Pendidikan Agama Kristen dan Budi Pekerti',
-    'Pendidikan Jasmani, Olahraga, dan Kesehatan (PJOK)','Pendidikan Pancasila','Prakarya',
-    'Prakarya Budi Daya','Prakarya Kerajinan','Prakarya Pengolahan','Prakarya Rekayasa','Sejarah',
-    'Sejarah Kebudayaan Islam','Sejarah Tingkat Lanjut','Seni Musik','Seni Rupa','Seni Tari',
-    'Seni Teater','Sosiologi'
+    'Pendidikan Agama Islam dan Budi Pekerti','Pendidikan Agama Kristen dan Budi Pekerti',
+    'Pendidikan Agama Katolik dan Budi Pekerti','Pendidikan Agama Hindu dan Budi Pekerti',
+    'Pendidikan Agama Buddha dan Budi Pekerti','Pendidikan Agama Khonghucu dan Budi Pekerti',
+    'Pendidikan Pancasila','Bahasa Indonesia','Matematika','Bahasa Inggris',
+    'Pendidikan Jasmani, Olahraga, dan Kesehatan (PJOK)','Sejarah',
+    'Seni Musik','Seni Rupa','Seni Tari','Seni Teater',
+    'Biologi','Fisika','Kimia','Koding dan Kecerdasan Artifisial (KKA)','Informatika',
+    'Ekonomi','Geografi','Sosiologi','Antropologi',
+    'Bahasa Arab','Bahasa Jepang','Bahasa Jerman','Bahasa Korea','Bahasa Mandarin','Bahasa Prancis',
+    'Prakarya dan kewirausahaan','Prakarya Budi Daya','Prakarya Kerajinan','Prakarya Pengolahan','Prakarya Rekayasa',
+    'Muatan Lokal','Lainnya'
   ];
   const selectMapel = document.getElementById('mapel');
   daftarMapel.forEach(m => {
     const opt = document.createElement('option');
     opt.value = m; opt.textContent = m;
     selectMapel.appendChild(opt);
+  });
+
+  const mapelLainnyaWrap = document.getElementById('mapelLainnyaWrap');
+  const mapelLainnyaInput = document.getElementById('mapelLainnya');
+  selectMapel.addEventListener('change', () => {
+    const isLainnya = selectMapel.value === 'Lainnya';
+    mapelLainnyaWrap.style.display = isLainnya ? '' : 'none';
+    mapelLainnyaInput.required = isLainnya;
+    if (!isLainnya) mapelLainnyaInput.value = '';
   });
 
   // 2. Data wilayah (hardcode) — 38 provinsi + kab/kota
@@ -628,6 +648,93 @@
     }
   });
 
+  // 2b. Cari data sekolah otomatis berdasarkan NPSN (tabel data_sekolah)
+  const npsnInput = document.getElementById('npsn');
+  const btnCariNpsn = document.getElementById('btnCariNpsn');
+  const npsnError = document.getElementById('npsnError');
+  const npsnErrorMsg = document.getElementById('npsnErrorMsg');
+  const instansiInput = document.getElementById('instansi');
+  let npsnVerified = false;
+
+  function showNpsnError(msg) {
+    npsnErrorMsg.textContent = msg;
+    npsnError.classList.add('show');
+  }
+
+  npsnInput.addEventListener('input', () => {
+    npsnInput.value = npsnInput.value.replace(/\D/g, '').slice(0, 8);
+    npsnError.classList.remove('show');
+  });
+
+  function resetNpsnCheck() {
+    npsnVerified = false;
+    npsnInput.readOnly = false;
+    npsnInput.value = '';
+    npsnError.classList.remove('show');
+    btnCariNpsn.textContent = 'Cek';
+    npsnInput.focus();
+  }
+
+  async function cariDataSekolah() {
+    const npsnVal = npsnInput.value.trim();
+    if (npsnVal.length !== 8) {
+      showNpsnError('NPSN harus 8 digit angka.');
+      return;
+    }
+
+    npsnError.classList.remove('show');
+    const originalBtn = btnCariNpsn.innerHTML;
+    btnCariNpsn.innerHTML = '<i data-lucide="loader-circle" class="spin"></i>';
+    btnCariNpsn.disabled = true;
+    lucide.createIcons();
+
+    try {
+      const { data, error } = await supabaseClient
+        .from('data_sekolah')
+        .select('nama, provinsi, kabupaten')
+        .eq('npsn', npsnVal)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) {
+        showNpsnError('NPSN tidak terdata.');
+        btnCariNpsn.innerHTML = originalBtn;
+        btnCariNpsn.disabled = false;
+        lucide.createIcons();
+        return;
+      }
+
+      instansiInput.value = data.nama || '';
+
+      if (data.provinsi && dataWilayah[data.provinsi]) {
+        selectProvinsi.value = data.provinsi;
+        selectProvinsi.dispatchEvent(new Event('change'));
+        if (data.kabupaten) {
+          selectKabKota.value = data.kabupaten;
+        }
+      }
+
+      npsnVerified = true;
+      npsnInput.readOnly = true;
+      btnCariNpsn.textContent = 'Reset';
+      btnCariNpsn.disabled = false;
+    } catch (err) {
+      showNpsnError('Gagal mengambil data sekolah: ' + (err.message || err) + '. Silakan isi manual.');
+      btnCariNpsn.innerHTML = originalBtn;
+      btnCariNpsn.disabled = false;
+      lucide.createIcons();
+    }
+  }
+
+  btnCariNpsn.addEventListener('click', () => {
+    if (npsnVerified) {
+      resetNpsnCheck();
+    } else {
+      cariDataSekolah();
+    }
+  });
+
   // 3. Toggle tampil/sembunyi kata sandi
   document.querySelectorAll('.pw-toggle').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -650,8 +757,19 @@
   const pw1 = document.getElementById('password');
   const pw2 = document.getElementById('password2');
   const pwError = document.getElementById('pwError');
+  const emailError = document.getElementById('emailError');
+  const emailErrorMsg = document.getElementById('emailErrorMsg');
+  const btnLanjut = document.getElementById('btnLanjut');
+  let userId = null;
 
-  function goToStep2() {
+  function showEmailError(msg) {
+    emailErrorMsg.textContent = msg;
+    emailError.classList.add('show');
+  }
+
+  emailInput.addEventListener('input', () => emailError.classList.remove('show'));
+
+  async function goToStep2() {
     let ok = true;
 
     if (!emailInput.checkValidity()) { emailInput.reportValidity(); ok = false; }
@@ -660,15 +778,42 @@
 
     if (!ok) return;
 
-    panelStep1.classList.remove('active');
-    panelStep2.classList.add('active');
-    stepIndicator1.classList.remove('active');
-    stepIndicator1.classList.add('done');
-    stepIndicator1.querySelector('.step-circle').innerHTML = '<i data-lucide="check"></i>';
-    stepIndicator2.classList.add('active');
-    stepConnector1.classList.add('done');
+    emailError.classList.remove('show');
+    const originalBtn = btnLanjut.innerHTML;
+    btnLanjut.innerHTML = '<i data-lucide="loader-circle" class="spin"></i> Memeriksa email...';
+    btnLanjut.disabled = true;
     lucide.createIcons();
-    window.scrollTo({ top: document.querySelector('.form-card').offsetTop - 100, behavior: 'smooth' });
+
+    try {
+      // Cek email sudah terdaftar atau belum lewat RPC cek_email_terdaftar
+      // (query read-only ke auth.users). Ga bikin akun apa-apa di sini —
+      // akun baru dibikin nanti pas submit biodata final di step 2.
+      const { data: sudahTerdaftar, error: cekError } = await supabaseClient.rpc('cek_email_terdaftar', {
+        p_email: emailInput.value.trim()
+      });
+
+      if (cekError) throw new Error(cekError.message);
+
+      if (sudahTerdaftar) {
+        throw new Error('Email ini sudah terdaftar. Silakan login atau gunakan email lain.');
+      }
+
+      panelStep1.classList.remove('active');
+      panelStep2.classList.add('active');
+      stepIndicator1.classList.remove('active');
+      stepIndicator1.classList.add('done');
+      stepIndicator1.querySelector('.step-circle').innerHTML = '<i data-lucide="check"></i>';
+      stepIndicator2.classList.add('active');
+      stepConnector1.classList.add('done');
+      lucide.createIcons();
+      window.scrollTo({ top: document.querySelector('.form-card').offsetTop - 100, behavior: 'smooth' });
+    } catch (err) {
+      showEmailError(err.message || 'Terjadi kesalahan. Silakan coba lagi.');
+    } finally {
+      btnLanjut.innerHTML = originalBtn;
+      btnLanjut.disabled = false;
+      lucide.createIcons();
+    }
   }
 
   function goToStep1() {
@@ -701,17 +846,9 @@
   // biar submit tetap bisa dicoba dan constraint DB jadi jaring pengaman terakhir).
   let nikCheckToken = 0;
   async function isNikTerdaftar(nik) {
-    try {
-      const { data, error } = await supabaseClient
-        .from('profiles')
-        .select('id')
-        .eq('nik', nik)
-        .maybeSingle();
-      if (error) return false;
-      return !!data;
-    } catch (_) {
-      return false;
-    }
+    const { data, error } = await supabaseClient.rpc('cek_nik_terdaftar', { p_nik: nik });
+    if (error) throw error;
+    return !!data;
   }
 
   nikInput.addEventListener('input', () => {
@@ -726,6 +863,9 @@
         // Batalkan kalau user udah lanjut ngetik/ubah nilai sejak cek ini dimulai
         if (myToken !== nikCheckToken || nikInput.value !== nikVal) return;
         nikNotice.classList.toggle('show', sudahAda);
+      }).catch(() => {
+        // Live-hint doang pas ngetik, gagal query di sini gapapa dibiarin
+        // senyap — pengecekan yang bener (dan wajib) tetep jalan pas submit.
       });
     }
   });
@@ -744,6 +884,16 @@
   form.addEventListener('submit', async function (e) {
     e.preventDefault();
 
+    // Form ini satu elemen buat step 1 & step 2, dan tombol submit ada di
+    // step 2 -> kalau user pencet Enter waktu masih di step 1 (misal abis
+    // ngetik password), browser otomatis nge-submit form ini juga meski
+    // belum sampe step 2. Kalau itu yang kejadian, arahin ke "Lanjutkan"
+    // yang bener, jangan jalanin validasi biodata step 2.
+    if (panelStep1.classList.contains('active')) {
+      goToStep2();
+      return;
+    }
+
     let ok = true;
     panelStep2.querySelectorAll('input[required], select[required], textarea[required]').forEach(el => {
       if (!el.checkValidity()) ok = false;
@@ -751,6 +901,12 @@
 
     if (nikInput.value.length !== 16) {
       nikError.classList.add('show');
+      ok = false;
+    }
+
+    if (!npsnVerified) {
+      showNpsnError('NPSN belum diverifikasi. Silakan klik tombol Cek terlebih dahulu.');
+      npsnInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
       ok = false;
     }
 
@@ -768,7 +924,7 @@
     lucide.createIcons();
 
     try {
-      // 0. Cek dulu NIK sudah terdaftar atau belum, SEBELUM akun auth dibuat.
+      // 1. Cek dulu NIK sudah terdaftar atau belum, SEBELUM akun auth dibuat.
       // Ini nyegah akun auth "yatim" (akun jadi tapi biodata gagal karena NIK dobel).
       if (await isNikTerdaftar(nikInput.value)) {
         nikNotice.classList.add('show');
@@ -779,29 +935,51 @@
         return;
       }
 
-      // 1. Buat akun (Supabase Auth)
-      const { data: signUpData, error: signUpError } = await supabaseClient.auth.signUp({
+      // 2. Baru di sini akun beneran dibuat (Supabase Auth)
+      let { data: signUpData, error: signUpError } = await supabaseClient.auth.signUp({
         email: emailInput.value.trim(),
         password: pw1.value
       });
 
       if (signUpError) {
-        throw new Error(
-          signUpError.message.includes('already registered') || signUpError.message.includes('already been registered')
-            ? 'Email ini sudah terdaftar. Silakan login atau gunakan email lain.'
-            : signUpError.message
-        );
+        const sudahTerdaftar = signUpError.message.includes('already registered') || signUpError.message.includes('already been registered');
+        if (!sudahTerdaftar) throw new Error(signUpError.message);
+
+        // Email udah ada di auth.users. Ini bisa jadi akun "yatim" dari
+        // percobaan sebelumnya yang gagal SETELAH signUp tapi SEBELUM biodata
+        // tersimpan (NIK dobel, koneksi putus, dll). Coba login pake
+        // email+password yang baru diisi — kalau cocok, berarti akun ini
+        // kepunyaan orang yang sama, lanjutkan aja nyimpen biodatanya
+        // alih-alih ngeblok dia permanen.
+        const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({
+          email: emailInput.value.trim(),
+          password: pw1.value
+        });
+
+        if (signInError) {
+          throw new Error('Email ini sudah terdaftar. Silakan kembali ke langkah 1 dan gunakan email lain.');
+        }
+
+        const { data: profilExisting } = await supabaseClient
+          .from('profiles')
+          .select('id')
+          .eq('id', signInData.user.id)
+          .maybeSingle();
+
+        if (profilExisting) {
+          throw new Error('Email ini sudah terdaftar dan biodatanya sudah lengkap. Silakan login untuk masuk ke akun Anda.');
+        }
+
+        signUpData = signInData;
       }
 
       if (!signUpData.session) {
-        // Konfirmasi email masih aktif di project Supabase ini, jadi belum ada
-        // sesi login otomatis. Biodata tidak bisa disimpan sampai email dikonfirmasi.
         throw new Error('Akun berhasil dibuat, tapi email konfirmasi perlu diverifikasi dulu sebelum biodata bisa disimpan. Silakan cek inbox Anda, lalu login untuk melengkapi biodata.');
       }
 
-      const userId = signUpData.user.id;
+      userId = signUpData.user.id;
 
-      // 2. Simpan biodata ke tabel profiles
+      // 3. Simpan biodata ke tabel profiles
       const { error: insertError } = await supabaseClient.from('profiles').insert({
         id: userId,
         email: emailInput.value.trim(),
@@ -813,7 +991,8 @@
         alamat_instansi: document.getElementById('alamat').value.trim(),
         provinsi: selectProvinsi.value,
         kabkota: selectKabKota.value,
-        mapel: selectMapel.value
+        mapel: selectMapel.value,
+        mapel_lainnya: selectMapel.value === 'Lainnya' ? mapelLainnyaInput.value.trim() : null
       });
 
       if (insertError) {
@@ -847,8 +1026,12 @@
     modalSukses.classList.remove('show');
     form.style.display = '';
     form.reset();
+    userId = null;
     selectKabKota.disabled = true;
     selectKabKota.innerHTML = '<option value="">Pilih provinsi dulu</option>';
+    npsnVerified = false;
+    npsnInput.readOnly = false;
+    btnCariNpsn.textContent = 'Cek';
     goToStep1();
   });
 </script>

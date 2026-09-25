@@ -116,6 +116,7 @@ const BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov'
 
 // ---------- Helper format & escape (murni, gak nyentuh DOM/network) ----------
 function fmtTgl(iso) { const p = iso.split('-').map(Number); return p[2] + ' ' + BULAN[p[1] - 1] + ' ' + p[0]; }
+function fmtTglJam(iso) { const d = new Date(iso); const pad = (n) => String(n).padStart(2, '0'); return d.getDate() + ' ' + BULAN[d.getMonth()] + ' ' + d.getFullYear() + ', ' + pad(d.getHours()) + '.' + pad(d.getMinutes()); }
 function fmtTglS(iso) { const p = iso.split('-').map(Number); return p[2] + ' ' + BULAN[p[1] - 1]; }
 function fmtRange(a, b) { return a === b ? fmtTglS(a) : fmtTglS(a) + ' - ' + fmtTglS(b); }
 function escapeHtml(str) { return String(str || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }

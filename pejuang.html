@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pejuang — LMS SEMESTA 2026</title>
+<meta name="description" content="LMS Program SEMESTA 2026, Direktorat Sekolah Menengah Atas, Kementerian Pendidikan Dasar dan Menengah Republik Indonesia.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<div class="app-shell">
+  <div id="sidebarSlot"></div>
+
+  <div class="main">
+    <div id="topbarSlot"></div>
+
+    <div class="content-inner">
+      <p class="error-box" id="pageError"><i data-lucide="alert-circle"></i> <span id="pageErrorMsg"></span></p>
+
+      <div class="card" id="pejuangRoot">
+        <div class="empty-state">
+          <div class="ic"><i data-lucide="hammer"></i></div>
+          <div class="t">Memuat...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="auth.js"></script>
+<script src="ui-sidebar.js"></script>
+<script>
+  // ---------- Data & state spesifik halaman Pejuang ----------
+  let karyaCache = []; // tiap item: baris karya + .anggota (array karya_anggota)
+  const karyaUi = { formOpen: false };
+
+  async function loadKarya(userId) {
+    const { data: karyaRows, error } = await supabaseClient.from('karya').select('*').eq('peserta_id', userId).order('created_at');
+    if (error) { showPageError('Gagal memuat data karya: ' + error.message); return; }
+
+    const karyaIds = (karyaRows || []).map(k => k.id);
+    const anggotaByKarya = {};
+    if (karyaIds.length) {
+      const { data: anggotaRows } = await supabaseClient.from('karya_anggota').select('*').in('karya_id', karyaIds).order('urutan');
+      (anggotaRows || []).forEach(a => { (anggotaByKarya[a.karya_id] = anggotaByKarya[a.karya_id] || []).push(a); });
+    }
+    karyaCache = (karyaRows || []).map(k => ({ ...k, anggota: anggotaByKarya[k.id] || [] }));
+    renderPejuang();
+  }
+
+  function sectionTitle(icon, text) {
+    return `<div class="section-title"><span class="ic ic-acc4"><i data-lucide="${icon}"></i></span><div>${text}</div></div>`;
+  }
+
+  function fileFieldHtml(label, name, accept, hint) {
+    return `
+      <div class="form-field">
+        <label>${label}</label>
+        <div class="file-upload" data-file-upload>
+          <input type="file" name="${name}" accept="${accept}">
+          <div class="file-upload-box">
+            <span class="fu-ic"><i data-lucide="upload-cloud"></i></span>
+            <span class="fu-text">
+              <span class="fu-name" data-fu-name>Klik atau seret berkas ke sini</span>
+              ${hint ? `<span class="fu-hint">${hint}</span>` : ''}
+            </span>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function karyaCardHtml(k) {
+    const chips = k.draft_uploaded_at ? `<span class="chip ok"><i data-lucide="check"></i> Draft terkirim</span>` : '';
+    return `
+      <div class="karya-card">
+        <div class="karya-head">
+          <div>
+            <div class="karya-title">${escapeHtml(k.judul)}</div>
+            <div class="karya-meta">${jenisLabel(k.jenis)}${(k.anggota && k.anggota.length) ? ', tim ' + (k.anggota.length + 1) + ' orang' : ''}</div>
+            ${Array.isArray(k.mapel) && k.mapel.length ? `<div class="karya-meta" style="margin-top:5px">${k.mapel.map(m => escapeHtml(m)).join(' • ')}</div>` : ''}
+          </div>
+          <div class="chips">${chips}</div>
+        </div>
+      </div>`;
+  }
+
+  function briefHtml() {
+    return `
+      <div class="info-box">
+        <div class="t">Tantangan SEMESTA</div>
+        <p>Angkat isu atau persoalan kontekstual di sekitar lingkungan sekolah dan/atau global, lalu ubah menjadi rancangan pembelajaran STEM yang bermakna. Tuangkan dalam draft modul ajar dan unggah paling lambat ${fmtTgl(TGL.batasDraft)}.</p>
+        <ul>
+          <li>Karya boleh disusun individu atau tim. Semua anggota tim harus dari satuan pendidikan yang sama.</li>
+          <li>Satu peserta boleh mengirim lebih dari satu karya, maksimal ${MAKS_KARYA} karya.</li>
+          <li>Karya berupa gagasan yang akan dilaksanakan, atau rencana pembelajaran yang sudah/sedang dilaksanakan.</li>
+          <li>Karya harus orisinal. Penggunaan AI wajib dideklarasikan pada karya akhir.</li>
+        </ul>
+      </div>`;
+  }
+
+  function draftFormHtml() {
+    const mapel = profileCache && profileCache.mapel ? profileCache.mapel : '';
+    return `
+      <form data-form="draft" class="form-stack">
+        <div class="form-field"><label>Judul karya</label><input type="text" name="judul" placeholder="Judul modul ajar"></div>
+        <div class="form-field">
+          <label>Mata pelajaran (bisa pilih lebih dari satu)</label>
+          <div class="chip-select">
+            ${DAFTAR_MAPEL.map((m, i) => `
+              <div class="chip-option">
+                <input type="checkbox" id="draft-mapel-${i}" name="mapel" value="${escapeAttr(m)}" ${m === mapel ? 'checked' : ''}>
+                <label for="draft-mapel-${i}">${escapeHtml(m)}</label>
+              </div>`).join('')}
+          </div>
+        </div>
+        <div class="form-field">
+          <label>Jenis karya</label>
+          <div class="select-card-group">
+            <div class="select-card">
+              <input type="radio" id="draft-jenis-belum" name="jenis" value="belum" checked>
+              <label for="draft-jenis-belum"><span class="sc-dot"><i data-lucide="check"></i></span><span class="sc-text">Gagasan atau rencana pembelajaran yang belum/akan dilaksanakan</span></label>
+            </div>
+            <div class="select-card">
+              <input type="radio" id="draft-jenis-sudah" name="jenis" value="sudah">
+              <label for="draft-jenis-sudah"><span class="sc-dot"><i data-lucide="check"></i></span><span class="sc-text">Rencana pembelajaran yang sudah/sedang dilaksanakan</span></label>
+            </div>
+          </div>
+        </div>
+        <div class="form-field">
+          <label>Anggota tim (opsional)</label>
+          <textarea name="anggota" rows="3" placeholder="Nama, email — satu anggota per baris"></textarea>
+          <div class="hint">Semua anggota harus berasal dari satuan pendidikan yang sama.</div>
+        </div>
+        ${fileFieldHtml('Draft modul ajar (PDF, maks 10 MB)', 'berkas', 'application/pdf,.pdf', 'Komponen minimal: topik, konten masalah, tujuan pembelajaran, alur aktivitas, dan rencana asesmen.')}
+        <p class="form-msg" data-msg></p>
+        <div class="row-actions">
+          <button type="submit" class="btn btn-primary btn-sm"><i data-lucide="upload"></i> Kirim draft</button>
+          <button type="button" class="btn btn-outline btn-sm" data-act="tutup-draft">Batal</button>
+        </div>
+      </form>`;
+  }
+
+  // Banner status pengumuman (lolos/tidak/menunggu) Kurasi Tahap 1
+  function hasilBannerHtml() {
+    const f = FASE[1]; // Pejuang
+    const hasil = getHasil(2) || 'menunggu';
+    const teks = f.hasil[hasil].replace('{tgl}', fmtTgl(f.tgl));
+    const tone = hasil === 'lolos' ? 'success' : hasil === 'tidak' ? 'warn' : 'action';
+    const icon = { lolos:'check-circle', tidak:'heart-handshake', menunggu:'hourglass' }[hasil];
+    const label = { lolos:'Selamat, kamu lolos!', tidak:'Belum lolos tahap ini', menunggu:'Menunggu pengumuman hasil' }[hasil];
+    return `
+      <div class="next-step tone-${tone}" style="margin-bottom:20px">
+        <div class="ns-body">
+          <span class="ns-ic"><i data-lucide="${icon}"></i></span>
+          <div>
+            <div class="ns-title">${label}</div>
+            <div class="ns-desc">${escapeHtml(teks)}</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function renderPejuang() {
+    const root = document.getElementById('pejuangRoot');
+    if (!root) return;
+    if (levelIdx() < 1) {
+      root.innerHTML = sectionTitle('swords', 'Pejuang') + `
+        <div class="lock-panel">
+          <div class="ic"><i data-lucide="lock"></i></div>
+          <div class="t">Menu Pejuang belum terbuka</div>
+          <p>Menu ini terbuka begitu kamu ditetapkan sebagai SEMESTA Pejuang. Pengumuman ${fmtTgl(TGL.pengumumanChallenger)}.</p>
+        </div>`;
+      lucide.createIcons();
+      return;
+    }
+    const t = todayStr(), karya = karyaCache;
+    let body;
+
+    if (t < TGL.tantangan) {
+      body = `
+        <div class="lock-panel">
+          <div class="ic"><i data-lucide="calendar-clock"></i></div>
+          <div class="t">Tantangan SEMESTA dibuka ${fmtTgl(TGL.tantangan)}</div>
+          <p>Batas pengumpulan karya awal ${fmtTgl(TGL.batasDraft)}, jadi siapkan gagasanmu dari sekarang.</p>
+        </div>`;
+    } else {
+      const belumPenuh = karya.length < MAKS_KARYA;
+      const bukaUnggah = t <= TGL.batasDraft && getHasil(2) === 'menunggu';
+      body = hasilBannerHtml() + briefHtml();
+      body += `
+        <div class="quota-row">
+          <div class="sub-title">Karya saya</div>
+          <span class="quota-pill ${belumPenuh ? '' : 'full'}"><i data-lucide="${belumPenuh ? 'file-text' : 'check'}"></i> ${karya.length}/${MAKS_KARYA} karya</span>
+        </div>`;
+      body += karya.length
+        ? karya.map(k => karyaCardHtml(k)).join('')
+        : `<p class="empty-note">Belum ada karya. Kirim draft modul ajar pertamamu.</p>`;
+      if (!bukaUnggah) {
+        body += `<div class="info-box"><p>Pengumpulan karya awal sudah ditutup. Batasnya ${fmtTgl(TGL.batasDraft)}.</p></div>`;
+      } else if (!belumPenuh) {
+        body += `<div class="info-box"><p>Kamu sudah mengirim ${MAKS_KARYA} karya, jumlah maksimal untuk Tantangan SEMESTA.</p></div>`;
+      } else {
+        body += karyaUi.formOpen
+          ? `<div class="karya-card"><div class="karya-title">Karya baru</div>${draftFormHtml()}</div>`
+          : `<button type="button" class="btn btn-primary btn-sm" data-act="buka-draft"><i data-lucide="plus"></i> ${karya.length ? 'Tambah karya' : 'Kirim draft modul ajar'}</button>`;
+      }
+    }
+    root.innerHTML = sectionTitle('swords', 'Pejuang') + body;
+    lucide.createIcons();
+  }
+
+  // ---------- Aksi dan submit form draft ----------
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('#pejuangRoot [data-act]');
+    if (!a) return;
+    if (a.dataset.act === 'buka-draft') karyaUi.formOpen = true;
+    else if (a.dataset.act === 'tutup-draft') karyaUi.formOpen = false;
+    else return;
+    renderPejuang();
+  });
+
+  document.addEventListener('submit', (e) => {
+    const f = e.target.closest('[data-form="draft"]');
+    if (!f) return;
+    e.preventDefault();
+    submitDraft(f);
+  });
+
+  // Tampilkan nama berkas yang dipilih pada komponen dropzone file-upload
+  document.addEventListener('change', (e) => {
+    const input = e.target.closest('.file-upload input[type="file"]');
+    if (!input) return;
+    const wrap = input.closest('.file-upload');
+    const nameEl = wrap.querySelector('[data-fu-name]');
+    const file = input.files[0];
+    wrap.classList.toggle('has-file', !!file);
+    if (nameEl) nameEl.textContent = file ? file.name : 'Klik atau seret berkas ke sini';
+  });
+
+  function tampilPesan(f, text) {
+    const m = f.querySelector('[data-msg]');
+    m.textContent = text;
+    m.className = 'form-msg' + (text ? ' error' : '');
+  }
+
+  async function submitDraft(f) {
+    if (karyaCache.length >= MAKS_KARYA) return tampilPesan(f, 'Maksimal ' + MAKS_KARYA + ' karya untuk Tantangan SEMESTA.');
+    const judul = f.elements.judul.value.trim();
+    const mapel = Array.from(f.querySelectorAll('input[name="mapel"]:checked')).map(el => el.value);
+    const file = f.elements.berkas.files[0];
+    if (!judul) return tampilPesan(f, 'Judul karya wajib diisi.');
+    if (!mapel.length) return tampilPesan(f, 'Pilih minimal satu mata pelajaran.');
+    const err = cekBerkas(file, ['.pdf'], 'draft modul ajar');
+    if (err) return tampilPesan(f, err);
+
+    const anggota = f.elements.anggota.value.split('\n').map(s => s.trim()).filter(Boolean).map((line, i) => {
+      const p = line.split(',').map(s => s.trim());
+      return { urutan: i, nama: p[0], email: p[1] || null };
+    });
+
+    const submitBtn = f.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.disabled = true;
+
+    // TODO (langkah GAS): upload `file` ke Drive, isi draft_file_url dengan link yang dibalikin.
+    // Untuk sekarang baris karya tersimpan, tapi draft_file_url masih kosong — cuma nama berkasnya yang disimpan.
+    const { data: karyaRow, error: karyaError } = await supabaseClient.from('karya').insert({
+      peserta_id: currentUserId, judul, mapel, jenis: f.elements.jenis.value,
+      draft_file_nama: file.name, draft_uploaded_at: new Date().toISOString()
+    }).select().single();
+
+    if (karyaError) {
+      if (submitBtn) submitBtn.disabled = false;
+      return tampilPesan(f, 'Gagal menyimpan karya: ' + karyaError.message);
+    }
+
+    if (anggota.length) {
+      // Cocokkan email anggota ke akun peserta terdaftar (buat basis fitur kolaborator nanti).
+      // Baris karya_anggota default status 'diundang' — belum ada alur acc/tolak di UI, nyusul.
+      const emails = anggota.map(a => a.email).filter(Boolean);
+      let peserta_idByEmail = {};
+      if (emails.length) {
+        const { data: matches } = await supabaseClient.from('profiles').select('id, email').in('email', emails);
+        (matches || []).forEach(m => { peserta_idByEmail[m.email] = m.id; });
+      }
+      const anggotaRows = anggota.map(a => ({
+        karya_id: karyaRow.id, urutan: a.urutan, nama: a.nama, email: a.email,
+        peserta_id: a.email ? (peserta_idByEmail[a.email] || null) : null
+      }));
+      const { error: anggotaError } = await supabaseClient.from('karya_anggota').insert(anggotaRows);
+      if (anggotaError) {
+        if (submitBtn) submitBtn.disabled = false;
+        return tampilPesan(f, 'Karya tersimpan, tapi gagal menyimpan anggota tim: ' + anggotaError.message);
+      }
+    }
+
+    karyaUi.formOpen = false;
+    await loadKarya(currentUserId);
+  }
+
+  // ---------- Bootstrap halaman ----------
+  (async function () {
+    renderSidebarShell('pejuang', 'Pejuang');
+    const boot = await bootstrapPeserta();
+    if (!boot) return;
+    if (boot.error) { showPageError(boot.error); return; }
+
+    renderSidebar('pejuang', 'Pejuang');
+
+    await loadKarya(currentUserId);
+  })();
+</script>
+</body>
+</html>

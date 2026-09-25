@@ -8,6 +8,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<style>
+  /* Cegah select & copy teks soal pretest/posttest — surgical, cuma di area .quiz-question */
+  .quiz-question, .quiz-question *{user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none}
+</style>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
@@ -26,27 +30,30 @@
 
       <div class="wb-stepper">
         <button type="button" class="wb-step-nav active" data-wb-tab="pre">
-          <span class="dot">P</span><span class="lbl">Pretest</span>
+          <span class="dot">P</span><span class="lbl">Pretest</span><span class="status">Memuat...</span>
         </button>
-        <button type="button" class="wb-step-nav" data-wb-tab="1">
-          <span class="dot">1</span><span class="lbl">Webinar 1</span>
+        <span class="wb-step-connector"></span>
+        <button type="button" class="wb-step-nav locked" data-wb-tab="1">
+          <span class="dot"><i data-lucide="lock"></i></span><span class="lbl">Webinar 1</span><span class="status">Terkunci</span>
         </button>
-        <button type="button" class="wb-step-nav" data-wb-tab="2">
-          <span class="dot">2</span><span class="lbl">Webinar 2</span>
+        <span class="wb-step-connector"></span>
+        <button type="button" class="wb-step-nav locked" data-wb-tab="2">
+          <span class="dot"><i data-lucide="lock"></i></span><span class="lbl">Webinar 2</span><span class="status">Terkunci</span>
         </button>
-        <button type="button" class="wb-step-nav" data-wb-tab="3">
-          <span class="dot">3</span><span class="lbl">Webinar 3</span>
+        <span class="wb-step-connector"></span>
+        <button type="button" class="wb-step-nav locked" data-wb-tab="3">
+          <span class="dot"><i data-lucide="lock"></i></span><span class="lbl">Webinar 3</span><span class="status">Terkunci</span>
         </button>
+        <span class="wb-step-connector"></span>
         <button type="button" class="wb-step-nav locked" data-wb-tab="post">
-          <span class="dot"><i data-lucide="lock"></i></span><span class="lbl">Posttest</span>
+          <span class="dot"><i data-lucide="lock"></i></span><span class="lbl">Posttest</span><span class="status">Terkunci</span>
         </button>
       </div>
       <div class="wb-cards">
         <div class="card active" data-webinar-panel="pre">
-          <div class="lock-panel">
-            <div class="ic"><i data-lucide="file-check"></i></div>
-            <div class="t">Pretest sebelum webinar</div>
-            <p>Kerjakan pretest ini sebelum mengikuti rangkaian Webinar 1–3. Soal pretest akan tersedia di sini.</p>
+          <div class="empty-state">
+            <div class="ic"><i data-lucide="hammer"></i></div>
+            <div class="t">Memuat...</div>
           </div>
         </div>
         <div class="card" data-webinar-panel="1">
@@ -87,11 +94,28 @@
   let webinarCache = null; // { webinars, best, soalCounts }
   let currentQuiz = null;  // { webinarId, nomor, soal, jawaban: {soalId: label} }
 
+  // Status berbasis jam webinar (bukan cuma is_active):
+  //  - belum_dibuka: admin belum aktifin menunya sama sekali
+  //  - sudah_dibuka: aktif, tapi belum masuk jam mulai (atau jadwal gak diisi) — menu bisa diakses,
+  //    link Zoom/rekaman udah kebuka, cuma sesi live-nya belum mulai
+  //  - berlangsung: aktif dan sekarang ada di antara jadwal_mulai s/d jadwal_selesai
+  function getWebinarWaktuStatus(w) {
+    if (!w.is_active) return 'belum_dibuka';
+    const now = new Date();
+    const mulai = w.jadwal_mulai ? new Date(w.jadwal_mulai) : null;
+    const selesai = w.jadwal_selesai ? new Date(w.jadwal_selesai) : null;
+    if (mulai && now < mulai) return 'sudah_dibuka';
+    if (mulai && selesai && now >= mulai && now <= selesai) return 'berlangsung';
+    return 'sudah_dibuka';
+  }
+
   async function loadWebinarsForPeserta(userId) {
-    const [webinarsRes, attemptsRes, soalRes] = await Promise.all([
+    const [webinarsRes, attemptsRes, soalRes, tontonRes, settingsRes] = await Promise.all([
       supabaseClient.from('webinars').select('*').order('nomor'),
       supabaseClient.from('peserta_pretest').select('webinar_id, skor, total_soal').eq('peserta_id', userId),
-      supabaseClient.from('webinar_soal').select('id, webinar_id')
+      supabaseClient.from('webinar_soal').select('id, webinar_id'),
+      supabaseClient.from('peserta_webinar_tonton').select('webinar_id, ditonton_at').eq('peserta_id', userId),
+      supabaseClient.from('pretest_posttest_settings').select('pretest_active, posttest_active').limit(1).maybeSingle()
     ]);
     if (webinarsRes.error) { showPageError('Gagal memuat data webinar: ' + webinarsRes.error.message); return; }
 
@@ -105,13 +129,15 @@
     const soalCounts = {};
     (soalRes.data || []).forEach(s => { soalCounts[s.webinar_id] = (soalCounts[s.webinar_id] || 0) + 1; });
 
-    const webinars = webinarsRes.data || [];
-    webinars.forEach(w => {
-      renderWebinarNavBadge(w);
-      renderWebinarPanel(w, bestByWebinar[w.id] || null, soalCounts[w.id] || 0);
-    });
+    const tontonByWebinar = {};
+    (tontonRes.data || []).forEach(t => { tontonByWebinar[t.webinar_id] = t; });
 
-    webinarCache = { webinars, best: bestByWebinar, soalCounts };
+    const webinars = webinarsRes.data || [];
+    webinars.forEach(w => renderWebinarNavBadge(w));
+
+    const prePost = settingsRes.data || { pretest_active: true, posttest_active: true };
+
+    webinarCache = { webinars, best: bestByWebinar, soalCounts, tonton: tontonByWebinar, prePost };
     updateWebinarStepper();
   }
 
@@ -120,9 +146,26 @@
     if (badge) badge.style.display = w.is_active ? 'none' : 'inline-flex';
   }
 
-  function renderWebinarPanel(w, bestAttempt, soalCount) {
+  function renderWebinarPanel(w, prereqDone, soalCount, tontonRow, pretestActive) {
     const container = document.querySelector(`[data-webinar-panel="${w.nomor}"]`);
     if (!container) return;
+
+    if (!prereqDone) {
+      const isPertama = w.nomor === 1;
+      const pretestOff = isPertama && !pretestActive;
+      container.innerHTML = `
+        <div class="lock-panel">
+          <div class="ic"><i data-lucide="${pretestOff ? 'hammer' : 'lock'}"></i></div>
+          <div class="t">Webinar ${w.nomor} masih terkunci</div>
+          <p>${pretestOff ? 'Sesi pretest belum dimulai. Webinar ' + w.nomor + ' akan terbuka setelah kamu menyelesaikan pretest.' : (isPertama ? 'Kerjakan Pretest terlebih dahulu' : 'Tandai "Sudah Menonton" pada Webinar ' + (w.nomor - 1) + ' terlebih dahulu') + ' untuk membuka Webinar ' + w.nomor + '.'}</p>
+          ${pretestOff ? '' : `<button type="button" class="btn btn-primary btn-sm" id="btnGoToPrereqFromLock" style="margin-top:14px">${isPertama ? 'Kerjakan Pretest' : 'Buka Webinar ' + (w.nomor - 1)}</button>`}
+        </div>
+      `;
+      lucide.createIcons();
+      const goBtn = document.getElementById('btnGoToPrereqFromLock');
+      if (goBtn) goBtn.addEventListener('click', () => showWebinarTab(isPertama ? 'pre' : String(w.nomor - 1)));
+      return;
+    }
 
     if (!w.is_active) {
       container.innerHTML = `
@@ -136,10 +179,10 @@
       return;
     }
 
-    renderWebinarIdleState(w, bestAttempt, soalCount);
+    renderWebinarIdleState(w, tontonRow);
   }
 
-  function renderWebinarIdleState(w, bestAttempt, soalCount) {
+  function renderWebinarIdleState(w, tontonRow) {
     const container = document.querySelector(`[data-webinar-panel="${w.nomor}"]`);
     const judul = w.judul ? escapeHtml(w.judul) : ('Webinar ' + w.nomor);
     const videoId = extractYoutubeId(w.youtube_url || '');
@@ -147,7 +190,19 @@
       ? `<div class="webinar-video"><iframe src="https://www.youtube.com/embed/${videoId}" title="${escapeAttr(w.judul || 'Webinar ' + w.nomor)}" allowfullscreen loading="lazy"></iframe></div>`
       : `<div class="empty-state" style="padding:24px 16px"><div class="ic"><i data-lucide="video-off"></i></div><p>Link video belum tersedia.</p></div>`;
 
-    const tgl = WEBINAR_FALLBACK[w.nomor] ? fmtTgl(WEBINAR_FALLBACK[w.nomor].tgl) : '';
+    // Jadwal: pakai jadwal_mulai dari DB kalau ada, fallback ke WEBINAR_FALLBACK (tanggal doang, tanpa jam)
+    // buat webinar yang belum diisi jadwalnya oleh admin.
+    const tgl = w.jadwal_mulai ? fmtTglJam(w.jadwal_mulai) : (WEBINAR_FALLBACK[w.nomor] ? fmtTgl(WEBINAR_FALLBACK[w.nomor].tgl) : '');
+
+    // Link Zoom cuma tampil kalau ada, dan (kalau jadwal_selesai diisi) belum lewat jamnya —
+    // biar yang gak sempet nonton live tetep bisa akses rekaman YouTube-nya.
+    const now = new Date();
+    const lewatJadwal = !!(w.jadwal_selesai && now > new Date(w.jadwal_selesai));
+    const tampilkanZoom = !!(w.zoom_url && !lewatJadwal);
+
+    const tontonHtml = tontonRow
+      ? `<div class="chip ok"><i data-lucide="check"></i> Sudah ditonton — ${fmtTglJam(tontonRow.ditonton_at)}</div>`
+      : `<button type="button" class="btn btn-outline btn-sm btn-tonton" data-tandai-tonton="${w.id}"><i data-lucide="check-circle"></i> Saya Sudah Menonton</button>`;
 
     container.innerHTML = `
       <div class="section-title">
@@ -157,16 +212,24 @@
       <div class="webinar-layout">
         <div>${videoHtml}</div>
         <div class="webinar-info-card">
-          <div class="webinar-info-title">${judul}</div>
-          ${tgl ? `<div class="webinar-info-row"><i data-lucide="calendar"></i> ${tgl}</div>` : ''}
-          <p style="font-size:12.5px;color:var(--muted);line-height:1.6;margin-top:6px">Tonton videonya sampai selesai. Pre-test dan post-test dikerjakan di tab Pretest dan Posttest.</p>
+          <div>
+            <div class="webinar-info-title">${judul}</div>
+            ${tgl ? `<div class="webinar-info-row"><i data-lucide="calendar"></i> ${tgl}</div>` : ''}
+          </div>
+          <p class="webinar-info-desc">Tonton videonya sampai selesai. Pre-test dan post-test dikerjakan di tab Pretest dan Posttest.</p>
+          ${lewatJadwal ? `<p class="webinar-info-desc" style="color:#b8770a"><i data-lucide="info" style="width:13px;height:13px;vertical-align:-2px"></i> Sesi live sudah lewat — link Zoom tidak lagi tersedia, silakan tonton rekamannya di YouTube.</p>` : ''}
+          <div class="webinar-cta">
+            ${tampilkanZoom ? `<a class="btn btn-zoom btn-sm" href="${escapeAttr(w.zoom_url)}" target="_blank" rel="noopener"><i data-lucide="video"></i> Buka Zoom Webinar</a>` : tontonHtml}
+          </div>
         </div>
       </div>
     `;
     lucide.createIcons();
   }
 
-  document.addEventListener('click', (e) => {
+  document.addEventListener('click', async (e) => {
+    const tontonBtn = e.target.closest('[data-tandai-tonton]');
+    if (tontonBtn) { await tandaiSudahNonton(tontonBtn.dataset.tandaiTonton); return; }
     const startBtn = e.target.closest('[data-start-pretest]');
     if (startBtn) startPretest(startBtn.dataset.startPretest, startBtn.dataset.webinarNomor);
     const tab = e.target.closest('[data-wb-tab]');
@@ -177,13 +240,18 @@
     const container = document.querySelector(`[data-webinar-panel="${nomor}"]`);
     container.innerHTML = `<div class="empty-state"><p>Memuat soal...</p></div>`;
 
-    const { data: soal, error } = await supabaseClient.from('webinar_soal').select('*').eq('webinar_id', webinarId).order('urutan');
+    // Pretest & posttest sama-sama pakai bank soal Webinar 1 biar delta-nya bisa diukur (soal identik).
+    // webinarId yang dilempar ke fungsi ini (w1.id buat pre, w3.id buat post) cuma dipakai sebagai kunci
+    // pencatatan attempt di peserta_pretest.webinar_id, BUKAN sumber soalnya.
+    const w1 = webinarCache && webinarCache.webinars.find(w => w.nomor === 1);
+    const soalWebinarId = w1 ? w1.id : webinarId;
+    const { data: soal, error } = await supabaseClient.from('webinar_soal').select('*').eq('webinar_id', soalWebinarId).order('urutan');
     if (error || !soal || soal.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
           <div class="ic"><i data-lucide="alert-circle"></i></div>
           <div class="t">Soal belum tersedia</div>
-          <p>Post-test untuk webinar ini belum disiapkan admin. Coba lagi nanti.</p>
+          <p>Soal pretest/posttest belum disiapkan admin. Coba lagi nanti.</p>
         </div>
       `;
       lucide.createIcons();
@@ -197,14 +265,21 @@
   function renderQuizForm() {
     const { nomor, soal } = currentQuiz;
     const container = document.querySelector(`[data-webinar-panel="${nomor}"]`);
+    const labelSoal = nomor === 'pre' ? 'Pretest' : 'Post-test';
     container.innerHTML = `
       <div class="section-title">
         <span class="ic ic-acc4"><i data-lucide="clipboard-list"></i></span>
-        <div>Post-test — ${soal.length} Soal</div>
+        <div>${labelSoal} — ${soal.length} Soal</div>
       </div>
       ${soal.map((s, i) => `
         <div class="quiz-question">
           <div class="quiz-question-num">Soal ${i + 1} dari ${soal.length}</div>
+          ${s.konteks ? `
+            <div style="background:rgba(19,102,194,.06);border-left:4px solid var(--blue);border-radius:10px;padding:14px 16px 14px 14px;margin-bottom:12px">
+              <div style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--blue);margin-bottom:6px"><i data-lucide="book-open" style="width:14px;height:14px"></i> Konteks / Skenario</div>
+              <div style="font-size:13.5px;font-style:italic;color:var(--ink);line-height:1.6">${escapeHtml(s.konteks).replace(/\n/g, '<br>')}</div>
+            </div>
+          ` : ''}
           <div class="quiz-question-text">${escapeHtml(s.pertanyaan)}</div>
           ${(s.pilihan || []).map(p => `
             <label class="quiz-option" data-soal-id="${s.id}" data-pilihan-label="${p.label}">
@@ -222,6 +297,13 @@
       </div>
     `;
     lucide.createIcons();
+
+    // Cegah copy teks soal (klik kanan / Ctrl+C) — cuma di area .quiz-question, gak ganggu bagian lain
+    container.querySelectorAll('.quiz-question').forEach(qEl => {
+      qEl.addEventListener('copy', e => e.preventDefault());
+      qEl.addEventListener('contextmenu', e => e.preventDefault());
+      qEl.addEventListener('selectstart', e => e.preventDefault());
+    });
 
     container.querySelectorAll('.quiz-option').forEach(opt => {
       opt.addEventListener('click', () => {
@@ -277,63 +359,47 @@
       return;
     }
 
+    // Skor disimpen ke DB (dipakai admin buat lihat hasilnya), tapi gak ditampilin ke peserta —
+    // baik pretest maupun posttest cuma nampilin konfirmasi "sudah tersimpan", tanpa skor/review jawaban.
     onPostTestSaved(webinarId, skor, soal.length);
-    if (nomor === 'pre') {
-      renderQuizDone(nomor);
-    } else {
-      renderQuizReview(soal, jawaban, skor, nomor);
+    renderQuizDone(nomor);
+  }
+
+  function renderQuizDone(nomor) {
+    const isPre = nomor === 'pre';
+    const container = document.querySelector(`[data-webinar-panel="${nomor}"]`);
+    container.innerHTML = `
+      <div class="lock-panel lock-panel-success">
+        <div class="ic"><i data-lucide="check-circle"></i></div>
+        <div class="t">${isPre ? 'Pretest selesai' : 'Posttest selesai'}</div>
+        <p>${isPre ? 'Jawabanmu sudah tersimpan. Lanjutkan ke Webinar 1 untuk mulai mengikuti rangkaian webinar.' : 'Jawabanmu sudah tersimpan. Terima kasih sudah menyelesaikan seluruh rangkaian webinar.'}</p>
+        ${isPre ? `<button type="button" class="btn btn-primary btn-sm" id="btnBackToIdle-${nomor}" style="margin-top:14px">Lanjut ke Webinar 1</button>` : ''}
+      </div>`;
+    lucide.createIcons();
+    if (isPre) {
+      document.getElementById(`btnBackToIdle-${nomor}`).addEventListener('click', async () => {
+        await loadWebinarsForPeserta(currentUserId);
+        showWebinarTab('1');
+      });
     }
   }
 
-  // Pretest: tanpa umpan balik per soal — cukup konfirmasi jawaban terkirim, lalu lanjut ke Webinar 1
-  function renderQuizDone(nomor) {
-    const container = document.querySelector(`[data-webinar-panel="${nomor}"]`);
-    container.innerHTML = `
-      <div class="lock-panel">
-        <div class="ic"><i data-lucide="check-circle"></i></div>
-        <div class="t">Pretest selesai</div>
-        <p>Jawabanmu sudah terkirim. Lanjutkan ke Webinar 1 untuk mulai mengikuti rangkaian webinar.</p>
-        <button type="button" class="btn btn-primary btn-sm" id="btnBackToIdle-${nomor}" style="margin-top:14px">Lanjut ke Webinar 1</button>
-      </div>`;
-    lucide.createIcons();
-    document.getElementById(`btnBackToIdle-${nomor}`).addEventListener('click', async () => {
-      await loadWebinarsForPeserta(currentUserId);
-      showWebinarTab('1');
-    });
-  }
+  async function tandaiSudahNonton(webinarId) {
+    const btn = document.querySelector(`[data-tandai-tonton="${webinarId}"]`);
+    if (btn) btn.disabled = true;
 
-  function renderQuizReview(soal, jawaban, skor, nomor) {
-    const container = document.querySelector(`[data-webinar-panel="${nomor}"]`);
-    container.innerHTML = `
-      <div class="section-title">
-        <span class="ic ic-acc2"><i data-lucide="check-circle"></i></span>
-        <div>Hasil Post-test</div>
-      </div>
-      <div class="score-badge" style="font-size:15px;padding:12px 20px;margin-bottom:22px"><i data-lucide="award"></i> ${skor} dari ${soal.length} jawaban benar</div>
-      ${soal.map((s, i) => {
-        const dipilih = jawaban[s.id];
-        const benar = dipilih === s.jawaban_benar;
-        const pilihanBenar = (s.pilihan || []).find(p => p.label === s.jawaban_benar);
-        const pilihanDipilih = (s.pilihan || []).find(p => p.label === dipilih);
-        return `
-          <div class="review-question ${benar ? 'correct' : 'incorrect'}">
-            <div class="review-verdict ${benar ? 'correct' : 'incorrect'}">
-              <i data-lucide="${benar ? 'check-circle' : 'x-circle'}"></i> ${benar ? 'Benar' : 'Kurang Tepat'}
-            </div>
-            <div class="quiz-question-text" style="margin-bottom:10px">Soal ${i + 1}. ${escapeHtml(s.pertanyaan)}</div>
-            <div class="review-answer-row"><span class="lbl">Jawaban kamu:</span> ${dipilih}. ${escapeHtml(pilihanDipilih ? pilihanDipilih.text : '-')}</div>
-            ${!benar ? `<div class="review-answer-row"><span class="lbl">Jawaban benar:</span> ${s.jawaban_benar}. ${escapeHtml(pilihanBenar ? pilihanBenar.text : '-')}</div>` : ''}
-            ${s.umpan_balik ? `<div class="review-feedback">${escapeHtml(s.umpan_balik)}</div>` : ''}
-          </div>
-        `;
-      }).join('')}
-      <button type="button" class="btn btn-outline" id="btnBackToIdle-${nomor}" style="width:100%;margin-top:6px"><i data-lucide="arrow-left"></i> Kembali</button>
-    `;
-    lucide.createIcons();
+    const { data, error } = await supabaseClient.from('peserta_webinar_tonton')
+      .upsert({ webinar_id: webinarId, peserta_id: currentUserId }, { onConflict: 'webinar_id,peserta_id' })
+      .select().single();
 
-    document.getElementById(`btnBackToIdle-${nomor}`).addEventListener('click', async () => {
-      await loadWebinarsForPeserta(currentUserId);
-    });
+    if (error) {
+      if (btn) btn.disabled = false;
+      showPageError('Gagal menandai tontonan: ' + error.message);
+      return;
+    }
+
+    if (webinarCache) webinarCache.tonton[webinarId] = data;
+    updateWebinarStepper();
   }
 
   function onPostTestSaved(webinarId, skor, total) {
@@ -356,29 +422,69 @@
     const w2 = webinarCache.webinars.find(w => w.nomor === 2);
     const w3 = webinarCache.webinars.find(w => w.nomor === 3);
 
-    // Webinar 2 & 3: terkunci di stepper kalau belum diaktifkan admin
-    [w2, w3].forEach(w => {
-      if (!w) return;
-      const btn = document.querySelector(`.wb-step-nav[data-wb-tab="${w.nomor}"]`);
-      if (btn) btn.classList.toggle('locked', !w.is_active);
-    });
+    const pretestActive = webinarCache.prePost ? webinarCache.prePost.pretest_active !== false : true;
+    const posttestActive = webinarCache.prePost ? webinarCache.prePost.posttest_active !== false : true;
 
     const preDone = !!(w1 && webinarCache.best[w1.id]);
+
+    // Webinar 1: terkunci selama pretest belum dikerjakan. Webinar 2 & 3: terkunci kalau belum diaktifkan admin.
+    // Nav tab DAN isi panelnya sama-sama di-refresh di sini — sebelumnya cuma tab nav yang keupdate,
+    // jadinya abis pretest kelar tab-nya kebuka tapi konten panel Webinar 1 masih nyangkut di versi locked lama.
+    const ditontonW1 = !!(w1 && webinarCache.tonton[w1.id]);
+    const ditontonW2 = !!(w2 && webinarCache.tonton[w2.id]);
+    const ditontonW3 = !!(w3 && webinarCache.tonton[w3.id]);
+    // Prasyarat berjenjang: W1 nunggu pretest, W2 nunggu W1 dicentang "Sudah Menonton", W3 nunggu W2 —
+    // jadi peserta yang gak sempet ikut live tetep harus jalanin webinar urut satu-satu.
+    // Ini murni buat orang yang ketinggalan live & mau jalan sendiri belakangan — dan tetap kekunci
+    // apa adanya kalau pretest-nya sendiri belum diaktifin admin (soal belum fix dsb).
+    const prereqByNomor = { 1: preDone, 2: ditontonW1, 3: ditontonW2 };
+
+    [w1, w2, w3].forEach(w => {
+      if (!w) return;
+      const prereqDone = prereqByNomor[w.nomor];
+      // Kalau gak locked, label status ngikut jam webinar (belum_dibuka/sudah_dibuka/berlangsung),
+      // bukan cuma is_active — jadi webinar yang aktif tapi belum masuk jam mulainya gak kebaca
+      // "Sedang berlangsung".
+      const waktuStatus = prereqDone ? getWebinarWaktuStatus(w) : null;
+      const belumDibuka = prereqDone && waktuStatus === 'belum_dibuka';
+      const ditonton = !!webinarCache.tonton[w.id];
+      const btn = document.querySelector(`.wb-step-nav[data-wb-tab="${w.nomor}"]`);
+      if (btn) {
+        btn.classList.toggle('locked', !prereqDone || belumDibuka);
+        btn.classList.toggle('done', prereqDone && !belumDibuka && ditonton);
+        const dot = btn.querySelector('.dot');
+        if (dot) dot.innerHTML = (!prereqDone || belumDibuka) ? '<i data-lucide="lock"></i>' : (ditonton ? '<i data-lucide="check"></i>' : String(w.nomor));
+        const status = btn.querySelector('.status');
+        if (status) {
+          status.textContent = !prereqDone ? 'Terkunci'
+            : (ditonton ? 'Selesai'
+            : (belumDibuka ? 'Belum dibuka'
+            : (waktuStatus === 'berlangsung' ? 'Sedang berlangsung' : 'Sudah dibuka')));
+        }
+      }
+      renderWebinarPanel(w, prereqDone, webinarCache.soalCounts[w.id] || 0, webinarCache.tonton[w.id] || null, pretestActive);
+    });
+
     const preBtn = document.querySelector('.wb-step-nav[data-wb-tab="pre"]');
     if (preBtn) {
       preBtn.classList.toggle('done', preDone);
+      preBtn.classList.toggle('locked', !pretestActive && !preDone);
       const dot = preBtn.querySelector('.dot');
-      if (dot) dot.innerHTML = preDone ? '<i data-lucide="check"></i>' : 'P';
+      if (dot) dot.innerHTML = preDone ? '<i data-lucide="check"></i>' : (!pretestActive ? '<i data-lucide="hammer"></i>' : 'P');
+      const status = preBtn.querySelector('.status');
+      if (status) status.textContent = preDone ? 'Selesai' : (!pretestActive ? 'Belum dibuka' : 'Belum dikerjakan');
     }
 
-    const postSiap = preDone && !!(w3 && w3.is_active);
+    const postSiap = ditontonW3 && posttestActive;
     const postDone = !!(w3 && webinarCache.best[w3.id]);
     const postBtn = document.querySelector('.wb-step-nav[data-wb-tab="post"]');
     if (postBtn) {
       postBtn.classList.toggle('locked', !postSiap);
       postBtn.classList.toggle('done', postDone);
       const dot = postBtn.querySelector('.dot');
-      if (dot) dot.innerHTML = postDone ? '<i data-lucide="check"></i>' : (postSiap ? '<i data-lucide="lock-open"></i>' : '<i data-lucide="lock"></i>');
+      if (dot) dot.innerHTML = postDone ? '<i data-lucide="check"></i>' : (postSiap ? '<i data-lucide="file-check"></i>' : '<i data-lucide="lock"></i>');
+      const status = postBtn.querySelector('.status');
+      if (status) status.textContent = postDone ? 'Selesai' : (!posttestActive ? 'Belum dibuka' : (postSiap ? 'Belum dikerjakan' : 'Terkunci'));
     }
 
     lucide.createIcons();
@@ -392,12 +498,25 @@
     const w = webinarCache.webinars.find(x => x.nomor === 1);
     if (!w) return;
     const best = webinarCache.best[w.id] || null;
+    const pretestActive = webinarCache.prePost ? webinarCache.prePost.pretest_active !== false : true;
+
+    if (!pretestActive && !best) {
+      container.innerHTML = `
+        <div class="lock-panel">
+          <div class="ic"><i data-lucide="hammer"></i></div>
+          <div class="t">Pretest belum dibuka</div>
+          <p>Sesi pretest belum dimulai. Nantikan informasi selanjutnya.</p>
+        </div>`;
+      lucide.createIcons();
+      return;
+    }
+
     container.innerHTML = `
-      <div class="lock-panel">
-        <div class="ic"><i data-lucide="file-check"></i></div>
+      <div class="lock-panel${best ? ' lock-panel-success' : ''}">
+        <div class="ic"><i data-lucide="${best ? 'check-circle' : 'file-check'}"></i></div>
         <div class="t">Pretest sebelum webinar</div>
-        <p>${best ? 'Kamu sudah mengerjakan pretest — skor terbaik ' + best.skor + '/' + best.total_soal + '.' : 'Kerjakan pretest ini sebelum mengikuti rangkaian Webinar 1–3.'}</p>
-        <button type="button" class="btn btn-primary btn-sm" data-start-pretest="${w.id}" data-webinar-nomor="pre" style="margin-top:14px">${best ? 'Coba lagi Pretest' : 'Kerjakan Pretest'}</button>
+        <p>${best ? 'Kamu sudah mengerjakan pretest. Pretest hanya bisa dikerjakan sekali.' : 'Kerjakan pretest ini sebelum mengikuti rangkaian Webinar 1–3.'}</p>
+        ${best ? '' : `<button type="button" class="btn btn-primary btn-sm" data-start-pretest="${w.id}" data-webinar-nomor="pre" style="margin-top:14px">Kerjakan Pretest</button>`}
       </div>`;
     lucide.createIcons();
   }
@@ -407,31 +526,45 @@
     if (!container || !webinarCache) return;
     const w1 = webinarCache.webinars.find(x => x.nomor === 1);
     const w3 = webinarCache.webinars.find(x => x.nomor === 3);
-    const preDone = !!(w1 && webinarCache.best[w1.id]);
-    const postSiap = preDone && !!(w3 && w3.is_active);
-    if (!postSiap || !w3) {
+    const ditontonW3 = !!(w3 && webinarCache.tonton[w3.id]);
+    if (!ditontonW3 || !w3) {
       container.innerHTML = `
         <div class="lock-panel">
           <div class="ic"><i data-lucide="lock"></i></div>
           <div class="t">Posttest terkunci</div>
-          <p>Posttest terbuka setelah kamu mengerjakan Pretest dan Webinar 1, 2, dan 3 sudah dibuka semua.</p>
+          <p>Selesaikan Webinar 1, 2, dan 3 (tandai "Sudah Menonton" di masing-masing) terlebih dahulu untuk membuka Posttest.</p>
         </div>`;
       lucide.createIcons();
       return;
     }
+
     const best = webinarCache.best[w3.id] || null;
+    const posttestActive = webinarCache.prePost ? webinarCache.prePost.posttest_active !== false : true;
+
+    if (!posttestActive && !best) {
+      container.innerHTML = `
+        <div class="lock-panel">
+          <div class="ic"><i data-lucide="hammer"></i></div>
+          <div class="t">Posttest belum dibuka</div>
+          <p>Sesi posttest belum dimulai. Nantikan informasi selanjutnya.</p>
+        </div>`;
+      lucide.createIcons();
+      return;
+    }
+
     container.innerHTML = `
-      <div class="lock-panel">
-        <div class="ic"><i data-lucide="file-check"></i></div>
+      <div class="lock-panel${best ? ' lock-panel-success' : ''}">
+        <div class="ic"><i data-lucide="${best ? 'check-circle' : 'file-check'}"></i></div>
         <div class="t">Posttest</div>
-        <p>${best ? 'Kamu sudah mengerjakan posttest — skor terbaik ' + best.skor + '/' + best.total_soal + '.' : 'Kerjakan posttest untuk menyelesaikan rangkaian webinar.'}</p>
-        <button type="button" class="btn btn-primary btn-sm" data-start-pretest="${w3.id}" data-webinar-nomor="post" style="margin-top:14px">${best ? 'Coba lagi Posttest' : 'Kerjakan Posttest'}</button>
+        <p>${best ? 'Kamu sudah mengerjakan posttest. Posttest hanya bisa dikerjakan sekali.' : 'Kerjakan posttest untuk menyelesaikan rangkaian webinar.'}</p>
+        ${best ? '' : `<button type="button" class="btn btn-primary btn-sm" data-start-pretest="${w3.id}" data-webinar-nomor="post" style="margin-top:14px">Kerjakan Posttest</button>`}
       </div>`;
     lucide.createIcons();
   }
 
   // ---------- Bootstrap halaman ----------
   (async function () {
+    renderSidebarShell('webinar', 'Webinar');
     const boot = await bootstrapPeserta();
     if (!boot) return;
     if (boot.error) { showPageError(boot.error); return; }

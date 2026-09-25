@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kreator — LMS SEMESTA 2026</title>
+<meta name="description" content="LMS Program SEMESTA 2026, Direktorat Sekolah Menengah Atas, Kementerian Pendidikan Dasar dan Menengah Republik Indonesia.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<div class="app-shell">
+  <div id="sidebarSlot"></div>
+
+  <div class="main">
+    <div id="topbarSlot"></div>
+
+    <div class="content-inner">
+      <p class="error-box" id="pageError"><i data-lucide="alert-circle"></i> <span id="pageErrorMsg"></span></p>
+
+      <div class="card" id="kreatorRoot">
+        <div class="empty-state">
+          <div class="ic"><i data-lucide="hammer"></i></div>
+          <div class="t">Memuat...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="auth.js"></script>
+<script src="ui-sidebar.js"></script>
+<script>
+  // ---------- Data & state spesifik halaman Kreator ----------
+  let karyaCache = []; // tiap item: baris karya + .anggota (array karya_anggota) + .akhir (baris karya_akhir atau null)
+  const karyaUi = { finalOpenId: null };
+
+  async function loadKarya(userId) {
+    const { data: karyaRows, error } = await supabaseClient.from('karya').select('*').eq('peserta_id', userId).order('created_at');
+    if (error) { showPageError('Gagal memuat data karya: ' + error.message); return; }
+
+    const karyaIds = (karyaRows || []).map(k => k.id);
+    const anggotaByKarya = {}, akhirByKarya = {};
+    if (karyaIds.length) {
+      const [anggotaRes, akhirRes] = await Promise.all([
+        supabaseClient.from('karya_anggota').select('*').in('karya_id', karyaIds).order('urutan'),
+        supabaseClient.from('karya_akhir').select('*').in('karya_id', karyaIds)
+      ]);
+      (anggotaRes.data || []).forEach(a => { (anggotaByKarya[a.karya_id] = anggotaByKarya[a.karya_id] || []).push(a); });
+      (akhirRes.data || []).forEach(a => { akhirByKarya[a.karya_id] = a; });
+    }
+    karyaCache = (karyaRows || []).map(k => ({ ...k, anggota: anggotaByKarya[k.id] || [], akhir: akhirByKarya[k.id] || null }));
+    renderKreator();
+  }
+
+  function sectionTitle(icon, text) {
+    return `<div class="section-title"><span class="ic ic-acc4"><i data-lucide="${icon}"></i></span><div>${text}</div></div>`;
+  }
+
+  function fileFieldHtml(label, name, accept, hint) {
+    return `
+      <div class="form-field">
+        <label>${label}</label>
+        <div class="file-upload" data-file-upload>
+          <input type="file" name="${name}" accept="${accept}">
+          <div class="file-upload-box">
+            <span class="fu-ic"><i data-lucide="upload-cloud"></i></span>
+            <span class="fu-text">
+              <span class="fu-name" data-fu-name>Klik atau seret berkas ke sini</span>
+              ${hint ? `<span class="fu-hint">${hint}</span>` : ''}
+            </span>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function karyaCardHtml(k, bisaFinal) {
+    const buka = karyaUi.finalOpenId === k.id && bisaFinal;
+    const chips = k.akhir
+      ? `<span class="chip ok"><i data-lucide="check"></i> Karya akhir terkirim</span>`
+      : `<span class="chip"><i data-lucide="minus"></i> Karya akhir belum diunggah</span>`;
+    return `
+      <div class="karya-card">
+        <div class="karya-head">
+          <div>
+            <div class="karya-title">${escapeHtml(k.judul)}</div>
+            <div class="karya-meta">${jenisLabel(k.jenis)}${(k.anggota && k.anggota.length) ? ', tim ' + (k.anggota.length + 1) + ' orang' : ''}</div>
+            ${Array.isArray(k.mapel) && k.mapel.length ? `<div class="karya-meta" style="margin-top:5px">${k.mapel.map(m => escapeHtml(m)).join(' • ')}</div>` : ''}
+          </div>
+          <div class="chips">${chips}</div>
+        </div>
+        ${bisaFinal && !buka ? `<button type="button" class="btn btn-outline btn-sm" data-act="buka-final" data-id="${escapeAttr(k.id)}">${k.akhir ? 'Ubah karya akhir' : 'Unggah karya akhir'}</button>` : ''}
+        ${buka ? finalFormHtml(k) : ''}
+      </div>`;
+  }
+
+  function klinikHtml() {
+    const sesi = KLINIK_SESI.map(s => `
+      <div class="kl-sesi">
+        <span class="meta"><i data-lucide="calendar"></i> ${fmtTgl(s.tanggal)}</span>
+        <span class="meta"><i data-lucide="clock"></i> ${escapeHtml(s.jam || 'Jam menyusul')}</span>
+        ${s.wa
+          ? `<a class="btn btn-whatsapp btn-sm" href="${escapeAttr(s.wa)}" target="_blank" rel="noopener">${ICON_WHATSAPP} Gabung Grup WA</a>`
+          : `<span class="tbd">Tautan grup WA diumumkan panitia</span>`}
+      </div>`).join('');
+    return `
+      <div class="klinik-card">
+        <div class="kl-ic"><i data-lucide="messages-square"></i></div>
+        <div class="kl-body">
+          <div class="t">Klinik SEMESTA</div>
+          <p>Sesi pendampingan bersama fasilitator untuk membahas dan menyempurnakan karyamu sebelum Kurasi Tahap 2.</p>
+          ${sesi}
+        </div>
+      </div>`;
+  }
+
+  function finalFormHtml(k) {
+    const nama = (profileCache && profileCache.nama) ? profileCache.nama : 'Penyusun utama';
+    const orang = [nama].concat((k.anggota || []).map(a => a.nama));
+    return `
+      <form data-form="final" data-id="${escapeAttr(k.id)}" class="form-stack">
+        ${fileFieldHtml('Modul ajar (PDF, maks 10 MB)', 'modul', 'application/pdf,.pdf')}
+        ${fileFieldHtml('Poster (PNG, maks 10 MB)', 'poster', 'image/png,.png')}
+        <div class="form-field">
+          <label>Tautan video YouTube${k.jenis === 'sudah' ? '' : ' (opsional)'}</label>
+          <input type="url" name="video" placeholder="https://www.youtube.com/watch?v=...">
+          <div class="hint">${k.jenis === 'sudah'
+            ? 'Wajib karena karya ini sudah/sedang dilaksanakan. Durasi maksimal 5 menit, landscape 16:9, resolusi minimal 1080p, dan akses dibuka untuk publik.'
+            : 'Video hanya diperlukan untuk karya yang sudah/sedang dilaksanakan.'}</div>
+        </div>
+
+        <div>
+          <div class="sub-title" style="margin-top:4px">Deklarasi penggunaan AI</div>
+          <div class="chk-group">
+            ${AI_KATEGORI.map((a, i) => `<label class="chk"><input type="checkbox" name="ai" value="${i}"> ${a}</label>`).join('')}
+          </div>
+        </div>
+        <div class="form-field"><label>AI digunakan sebagai alat bantu untuk</label><textarea name="ai_alat" rows="2"></textarea></div>
+        <div class="form-field"><label>Bagian yang memperoleh bantuan AI</label><textarea name="ai_bagian" rows="2"></textarea></div>
+        <label class="chk"><input type="checkbox" name="ai_ok"> Seluruh keluaran AI telah saya tinjau, verifikasi, dan sesuaikan, serta menjadi tanggung jawab penuh penyusun.</label>
+
+        <div>
+          <div class="sub-title" style="margin-top:4px">Surat pernyataan keaslian karya dan izin publikasi</div>
+          <p class="hint" style="margin-top:0">Wajib untuk setiap anggota tim, sudah ditandatangani. Format PDF, JPG, atau PNG.</p>
+        </div>
+        ${orang.map((n, i) => fileFieldHtml(escapeHtml(n), `surat_${i}`, '.pdf,.jpg,.jpeg,.png')).join('')}
+
+        <p class="form-msg" data-msg></p>
+        <div class="row-actions">
+          <button type="submit" class="btn btn-primary btn-sm"><i data-lucide="send"></i> Kirim karya akhir</button>
+          <button type="button" class="btn btn-outline btn-sm" data-act="tutup-final">Batal</button>
+        </div>
+      </form>`;
+  }
+
+  // Banner status pengumuman (lolos/tidak/menunggu) Kurasi Tahap 2
+  function hasilBannerHtml() {
+    const f = FASE[2]; // Kreator
+    const hasil = getHasil(3) || 'menunggu';
+    const teks = f.hasil[hasil].replace('{tgl}', fmtTgl(f.tgl));
+    const tone = hasil === 'lolos' ? 'success' : hasil === 'tidak' ? 'warn' : 'action';
+    const icon = { lolos:'check-circle', tidak:'heart-handshake', menunggu:'hourglass' }[hasil];
+    const label = { lolos:'Selamat, kamu lolos!', tidak:'Belum lolos tahap ini', menunggu:'Menunggu pengumuman hasil' }[hasil];
+    return `
+      <div class="next-step tone-${tone}" style="margin-bottom:20px">
+        <div class="ns-body">
+          <span class="ns-ic"><i data-lucide="${icon}"></i></span>
+          <div>
+            <div class="ns-title">${label}</div>
+            <div class="ns-desc">${escapeHtml(teks)}</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function renderKreator() {
+    const root = document.getElementById('kreatorRoot');
+    if (!root) return;
+    if (levelIdx() < 2) {
+      root.innerHTML = sectionTitle('pen-tool', 'Kreator') + `
+        <div class="lock-panel">
+          <div class="ic"><i data-lucide="lock"></i></div>
+          <div class="t">Menu Kreator belum terbuka</div>
+          <p>Menu ini terbuka begitu karyamu lolos Kurasi Tahap 1. Pengumuman ${fmtTgl(TGL.pengumumanKurasi1)}.</p>
+        </div>`;
+      lucide.createIcons();
+      return;
+    }
+    const t = todayStr(), karya = karyaCache;
+    const bisaFinal = t <= TGL.batasFinal && getHasil(3) === 'menunggu';
+
+    let body = hasilBannerHtml() + klinikHtml();
+    body += `<div class="sub-title" style="margin-top:6px">Karya akhir</div>`;
+    body += `<p class="empty-note" style="margin-bottom:14px">Kumpulkan modul ajar (PDF), poster (PNG), dan tautan video YouTube untuk karya yang sudah/sedang dilaksanakan. Batas pengumpulan ${fmtTgl(TGL.batasFinal)}.</p>`;
+    body += karya.length
+      ? karya.map(k => karyaCardHtml(k, bisaFinal)).join('')
+      : `<p class="empty-note">Belum ada karya yang terdaftar.</p>`;
+    if (!bisaFinal) {
+      body += `<div class="info-box"><p>${t > TGL.batasFinal ? 'Pengumpulan karya akhir sudah ditutup pada ' + fmtTgl(TGL.batasFinal) + '.' : 'Pengumpulan karya akhir tidak lagi dibuka.'}</p></div>`;
+    }
+    root.innerHTML = sectionTitle('pen-tool', 'Kreator') + body;
+    lucide.createIcons();
+  }
+
+  // ---------- Aksi dan submit form karya akhir ----------
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('#kreatorRoot [data-act]');
+    if (!a) return;
+    if (a.dataset.act === 'buka-final') karyaUi.finalOpenId = a.dataset.id;
+    else if (a.dataset.act === 'tutup-final') karyaUi.finalOpenId = null;
+    else return;
+    renderKreator();
+  });
+
+  document.addEventListener('submit', (e) => {
+    const f = e.target.closest('[data-form="final"]');
+    if (!f) return;
+    e.preventDefault();
+    submitFinal(f);
+  });
+
+  // Tampilkan nama berkas yang dipilih pada komponen dropzone file-upload
+  document.addEventListener('change', (e) => {
+    const input = e.target.closest('.file-upload input[type="file"]');
+    if (!input) return;
+    const wrap = input.closest('.file-upload');
+    const nameEl = wrap.querySelector('[data-fu-name]');
+    const file = input.files[0];
+    wrap.classList.toggle('has-file', !!file);
+    if (nameEl) nameEl.textContent = file ? file.name : 'Klik atau seret berkas ke sini';
+  });
+
+  function tampilPesan(f, text) {
+    const m = f.querySelector('[data-msg]');
+    m.textContent = text;
+    m.className = 'form-msg' + (text ? ' error' : '');
+  }
+
+  async function submitFinal(f) {
+    const k = karyaCache.find(x => x.id === f.dataset.id);
+    if (!k) return;
+    let err = cekBerkas(f.elements.modul.files[0], ['.pdf'], 'modul ajar');
+    if (!err) err = cekBerkas(f.elements.poster.files[0], ['.png'], 'poster');
+    const video = f.elements.video.value.trim();
+    if (!err && k.jenis === 'sudah' && !video) err = 'Tautan video YouTube wajib diisi untuk karya yang sudah/sedang dilaksanakan.';
+    if (!err && video && !extractYoutubeId(video)) err = 'Tautan video harus berupa tautan YouTube yang valid.';
+    const ai = Array.from(f.querySelectorAll('input[name="ai"]:checked')).map(x => Number(x.value));
+    if (!err && ai.length === 0) err = 'Pilih minimal satu kategori pada deklarasi penggunaan AI.';
+    if (!err && ai.includes(0) && ai.length > 1) err = 'Jika memilih "Tidak menggunakan AI", jangan pilih kategori lain.';
+    const pakaiAi = ai.length > 0 && !ai.includes(0);
+    if (!err && pakaiAi) {
+      if (!f.elements.ai_alat.value.trim() || !f.elements.ai_bagian.value.trim()) err = 'Lengkapi keterangan alat bantu dan bagian yang dibantu AI.';
+      else if (!f.elements.ai_ok.checked) err = 'Centang pernyataan bahwa keluaran AI sudah kamu tinjau.';
+    }
+    const jumlahOrang = 1 + (k.anggota || []).length;
+    for (let i = 0; i < jumlahOrang && !err; i++) {
+      const file = f.elements['surat_' + i].files[0];
+      err = cekBerkas(file, ['.pdf', '.jpg', '.jpeg', '.png'], 'surat pernyataan ' + (i + 1));
+    }
+    if (err) return tampilPesan(f, err);
+
+    // TODO (langkah GAS): upload modul/poster/surat ke Drive, baru insert/upsert karya_akhir
+    // (modul_url, poster_url, video_url, surat_ketua_url) dan update karya_anggota.surat_url per anggota.
+    // Validasi di atas sudah lengkap dan siap dipakai begitu endpoint GAS-nya ada.
+    tampilPesan(f, 'Formulir sudah lengkap dan valid. Unggah karya akhir belum aktif — menunggu endpoint upload berkas.');
+  }
+
+  // ---------- Bootstrap halaman ----------
+  (async function () {
+    renderSidebarShell('kreator', 'Kreator');
+    const boot = await bootstrapPeserta();
+    if (!boot) return;
+    if (boot.error) { showPageError(boot.error); return; }
+
+    renderSidebar('kreator', 'Kreator');
+
+    await loadKarya(currentUserId);
+  })();
+</script>
+</body>
+</html>

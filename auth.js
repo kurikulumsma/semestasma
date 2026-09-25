@@ -38,6 +38,7 @@ async function bootstrapPeserta() {
     .from('user_roles').select('role').eq('id', userId).single();
   if (roleError) return { error: 'Gagal membaca role akun: ' + roleError.message };
   if (roleData.role === 'admin') { window.location.href = 'admin.html'; return null; }
+  if (roleData.role === 'kurator') { window.location.href = 'kurasi.html'; return null; }
 
   const { data: profile, error: profileError } = await supabaseClient
     .from('profiles').select('*').eq('id', userId).single();
@@ -50,7 +51,36 @@ async function bootstrapPeserta() {
   // Kalau tetap gak ketemu (akun lama sebelum trigger dipasang), anggap masih Penjelajah.
   statusCache = statusError ? { status: 'penjelajah' } : statusRow;
 
+  startPresenceTracking(userId, profile);
+  logLmsActivity(userId);
+
   return { session, profile, status: statusCache };
+}
+
+// Log satu baris ke lms_activity tiap kali halaman peserta di-load, dibaca admin.html
+// buat heatmap pola hari & jam akses. Fire-and-forget (gak di-await) supaya gagal
+// insert gak nge-block render halaman peserta.
+function logLmsActivity(userId) {
+  supabaseClient.from('lms_activity').insert({ peserta_id: userId }).then(({ error }) => {
+    if (error) console.error('Gagal mencatat lms_activity:', error.message);
+  });
+}
+
+// Presence: nandain peserta ini "online" selama halaman LMS-nya kebuka, dibaca admin.html
+// buat nampilin jumlah peserta yang lagi nyambung. Gak nyentuh tabel apapun — murni channel
+// Realtime. Kalau tab ditutup / koneksi putus, Supabase otomatis nge-drop dia dari presence,
+// jadi gak perlu heartbeat atau bersih-bersih manual.
+let presenceChannel = null;
+function startPresenceTracking(userId, profile) {
+  if (presenceChannel) return; // udah jalan, gak usah subscribe dobel
+  presenceChannel = supabaseClient.channel('presence-peserta-online', {
+    config: { presence: { key: userId } }
+  });
+  presenceChannel.subscribe(async (status) => {
+    if (status === 'SUBSCRIBED') {
+      await presenceChannel.track({ nama: profile?.nama || '', online_at: new Date().toISOString() });
+    }
+  });
 }
 
 function getLevel() { return (STATUS_MAP[statusCache.status] || STATUS_MAP.penjelajah).level; }

@@ -178,7 +178,9 @@
       return;
     }
 
-    window.location.href = roleData.role === 'admin' ? 'admin.html' : 'lms.html';
+    if (roleData.role === 'admin') { window.location.href = 'admin.html'; return; }
+    if (roleData.role === 'kurator') { window.location.href = 'kurasi.html'; return; }
+    window.location.href = 'beranda.html';
   }
 
   (async () => {
